@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Banda</title>
+<style>
+:root{
+  --bg:#0f1420;--panel:#171d2c;--raised:#212a3f;--line:#2a3550;
+  --text:#e8ecf5;--muted:#8d97b0;--accent:#ffb347;--accent-ink:#2a1a00;--danger:#ff6b6b;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* --- schermata di ingresso --- */
+#join{display:flex;align-items:center;justify-content:center;min-height:100%;padding:24px}
+#join form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
+#join h1{margin:0 0 4px;font-size:44px;letter-spacing:-0.03em;line-height:1}
+#join p{margin:0 0 8px;color:var(--muted)}
+#join input{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:12px 16px;font-weight:700}
+.btn.ghost{background:var(--raised);color:var(--text);font-weight:600}
+.btn.danger{background:var(--danger);color:#2b0000}
+#err{color:var(--danger);min-height:1.4em;margin:0}
+
+/* --- app --- */
+#app{display:none;height:100%}
+#app.on{display:flex}
+#side{width:260px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:14px 10px;gap:16px;overflow-y:auto}
+#side h2{margin:0 6px 6px;font-size:13px;font-weight:600;color:var(--muted)}
+.ch{display:block;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:8px 10px;color:var(--muted)}
+.ch:hover{background:var(--raised)}
+.ch.on{background:var(--raised);color:var(--text);font-weight:600}
+.user{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:8px}
+.av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;flex:none}
+.user .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:12px;color:var(--accent)}
+#voicebox{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+#voicebox.live{border-color:var(--accent)}
+#vmsg{margin:0;font-size:13px;color:var(--muted)}
+.row{display:flex;gap:8px}
+.row .btn{flex:1;padding:9px 10px}
+
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#top{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);padding-top:calc(12px + env(safe-area-inset-top,0px))}
+#top h1{margin:0;font-size:17px}
+#menu{display:none;background:var(--raised);border:0;border-radius:8px;padding:6px 10px}
+#conn{margin-left:auto;font-size:13px;color:var(--muted)}
+#msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;gap:10px;max-width:640px}
+.msg .meta{font-size:13px;color:var(--muted)}
+.msg .meta b{color:var(--text);margin-right:6px}
+.msg .body{white-space:pre-wrap;overflow-wrap:anywhere}
+.empty{margin:auto;color:var(--muted);text-align:center}
+#bar{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+#txt{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+
+@media (max-width:760px){
+  #side{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-100%);transition:transform .2s;width:min(300px,86vw);padding-top:calc(14px + env(safe-area-inset-top,0px))}
+  #side.open{transform:none}
+  #menu{display:block}
+}
+@media (prefers-reduced-motion:reduce){#side{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="join">
+  <form id="jf">
+    <h1>Banda</h1>
+    <p>Chat e chiamate vocali con i tuoi amici. Nessun account: scegli un nome ed entra.</p>
+    <input id="name" placeholder="Il tuo nome" maxlength="24" autocomplete="nickname" required>
+    <input id="pass" type="password" placeholder="Password della stanza (se c'è)" autocomplete="off">
+    <p id="err" role="alert"></p>
+    <button class="btn" type="submit">Entra</button>
+  </form>
+</div>
+
+<div id="app">
+  <aside id="side">
+    <section>
+      <h2>Canali di testo</h2>
+      <div id="chs"></div>
+    </section>
+    <section>
+      <h2>Stanza vocale</h2>
+      <div id="voicebox">
+        <p id="vmsg">Nessuno in chiamata.</p>
+        <div class="row">
+          <button class="btn" id="vjoin">Entra</button>
+          <button class="btn ghost" id="vmute" hidden>Muta</button>
+        </div>
+      </div>
+    </section>
+    <section>
+      <h2 id="uh">Online</h2>
+      <div id="users"></div>
+    </section>
+  </aside>
+
+  <main id="main">
+    <header id="top">
+      <button id="menu" aria-label="Apri menu">Menu</button>
+      <h1 id="title"></h1>
+      <span id="conn"></span>
+    </header>
+    <div id="msgs"></div>
+    <div id="bar">
+      <input id="txt" placeholder="Scrivi un messaggio" maxlength="1000" autocomplete="off">
+      <button class="btn" id="send">Invia</button>
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const ICE = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }];
+
+let ws, me = null, channels = [], history = {}, cur = "generale", users = [];
+let creds = null, inVoice = false, localStream = null, muted = false;
+const pcs = {}, audios = {};
+
+/* ---------- utilità ---------- */
+function color(name) {
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return "hsl(" + h + ",50%,42%)";
+}
+function avatar(name) {
+  const d = document.createElement("div");
+  d.className = "av";
+  d.style.background = color(name);
+  d.textContent = (name[0] || "?").toUpperCase();
+  return d;
+}
+const send = (o) => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+
+/* ---------- connessione ---------- */
+function connect() {
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+  ws.onopen = () => { $("#conn").textContent = ""; send({ t: "join", name: creds.name, pass: creds.pass }); };
+  ws.onmessage = (e) => handle(JSON.parse(e.data));
+  ws.onclose = () => {
+    leaveVoice(false);
+    if (!me) return;
+    $("#conn").textContent = "Connessione persa, riprovo…";
+    setTimeout(connect, 2000);
+  };
+}
+
+function handle(m) {
+  if (m.t === "denied") {
+    $("#err").textContent = "Password sbagliata.";
+    creds = null; ws.onclose = null; ws.close();
+  } else if (m.t === "welcome") {
+    me = { id: m.id, name: m.name };
+    channels = m.channels; history = m.history;
+    if (!channels.includes(cur)) cur = channels[0];
+    $("#join").style.display = "none";
+    $("#app").classList.add("on");
+    renderChannels(); renderMsgs();
+  } else if (m.t === "users") {
+    users = m.users;
+    renderUsers();
+    for (const id of Object.keys(pcs)) {
+      const u = users.find((x) => x.id === id);
+      if (!u || !u.voice) closePeer(id);
+    }
+  } else if (m.t === "msg") {
+    history[m.ch].push(m.m);
+    if (m.ch === cur) renderMsgs();
+  } else if (m.t === "voice-peers") {
+    m.peers.forEach((id) => makePeer(id, true));
+  } else if (m.t === "signal") {
+    onSignal(m.from, m.data);
+  }
+}
+
+/* ---------- interfaccia ---------- */
+function renderChannels() {
+  const box = $("#chs");
+  box.innerHTML = "";
+  channels.forEach((c) => {
+    const b = document.createElement("button");
+    b.className = "ch" + (c === cur ? " on" : "");
+    b.textContent = "# " + c;
+    b.onclick = () => { cur = c; renderChannels(); renderMsgs(); $("#side").classList.remove("open"); };
+    box.appendChild(b);
+  });
+  $("#title").textContent = "# " + cur;
+}
+
+function renderUsers() {
+  const box = $("#users");
+  box.innerHTML = "";
+  users.forEach((u) => {
+    const r = document.createElement("div");
+    r.className = "user";
+    const n = document.createElement("span");
+    n.className = "nm";
+    n.textContent = u.name + (u.id === me.id ? " (tu)" : "");
+    r.append(avatar(u.name), n);
+    if (u.voice) {
+      const t = document.createElement("span");
+      t.className = "tag";
+      t.textContent = "in vocale";
+      r.appendChild(t);
+    }
+    box.appendChild(r);
+  });
+  $("#uh").textContent = "Online (" + users.length + ")";
+  const inCall = users.filter((u) => u.voice).map((u) => u.name);
+  $("#vmsg").textContent = inCall.length ? "In chiamata: " + inCall.join(", ") : "Nessuno in chiamata.";
+}
+
+function renderMsgs() {
+  const box = $("#msgs");
+  const list = history[cur] || [];
+  box.innerHTML = "";
+  if (!list.length) {
+    const e = document.createElement("p");
+    e.className = "empty";
+    e.textContent = "Ancora nessun messaggio. Scrivi il primo.";
+    box.appendChild(e);
+    return;
+  }
+  list.forEach((m) => {
+    const row = document.createElement("div");
+    row.className = "msg";
+    const col = document.createElement("div");
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const b = document.createElement("b");
+    b.textContent = m.user;
+    meta.append(b, new Date(m.ts).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
+    const body = document.createElement("div");
+    body.className = "body";
+    body.textContent = m.text;
+    col.append(meta, body);
+    row.append(avatar(m.user), col);
+    box.appendChild(row);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendMsg() {
+  const v = $("#txt").value.trim();
+  if (!v) return;
+  send({ t: "msg", ch: cur, text: v });
+  $("#txt").value = "";
+}
+
+/* ---------- chiamate vocali (WebRTC) ---------- */
+async function joinVoice() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  } catch (e) {
+    $("#vmsg").textContent = "Microfono non disponibile. Controlla i permessi (serve HTTPS).";
+    return;
+  }
+  inVoice = true; muted = false;
+  $("#voicebox").classList.add("live");
+  $("#vjoin").textContent = "Esci";
+  $("#vjoin").classList.add("danger");
+  $("#vmute").hidden = false;
+  $("#vmute").textContent = "Muta";
+  send({ t: "voice-join" });
+}
+
+function leaveVoice(notify = true) {
+  if (!inVoice) return;
+  inVoice = false;
+  Object.keys(pcs).forEach(closePeer);
+  if (localStream) localStream.getTracks().forEach((t) => t.stop());
+  localStream = null;
+  $("#voicebox").classList.remove("live");
+  $("#vjoin").textContent = "Entra";
+  $("#vjoin").classList.remove("danger");
+  $("#vmute").hidden = true;
+  if (notify) send({ t: "voice-leave" });
+}
+
+function makePeer(id, initiator) {
+  if (pcs[id]) return pcs[id];
+  const pc = new RTCPeerConnection({ iceServers: ICE });
+  pcs[id] = pc;
+  localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+  pc.onicecandidate = (e) => e.candidate && send({ t: "signal", to: id, data: { ice: e.candidate } });
+  pc.ontrack = (e) => {
+    let a = audios[id];
+    if (!a) {
+      a = document.createElement("audio");
+      a.autoplay = true;
+      a.playsInline = true;
+      document.body.appendChild(a);
+      audios[id] = a;
+    }
+    a.srcObject = e.streams[0];
+  };
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === "failed") closePeer(id);
+  };
+  if (initiator) {
+    pc.createOffer()
+      .then((o) => pc.setLocalDescription(o))
+      .then(() => send({ t: "signal", to: id, data: { sdp: pc.localDescription } }));
+  }
+  return pc;
+}
+
+async function onSignal(from, data) {
+  if (!inVoice) return;
+  const pc = pcs[from] || makePeer(from, false);
+  try {
+    if (data.sdp) {
+      await pc.setRemoteDescription(data.sdp);
+      if (data.sdp.type === "offer") {
+        await pc.setLocalDescription(await pc.createAnswer());
+        send({ t: "signal", to: from, data: { sdp: pc.localDescription } });
+      }
+    } else if (data.ice) {
+      await pc.addIceCandidate(data.ice);
+    }
+  } catch (e) {}
+}
+
+function closePeer(id) {
+  if (pcs[id]) { pcs[id].close(); delete pcs[id]; }
+  if (audios[id]) { audios[id].srcObject = null; audios[id].remove(); delete audios[id]; }
+}
+
+/* ---------- eventi ---------- */
+$("#jf").addEventListener("submit", (e) => {
+  e.preventDefault();
+  $("#err").textContent = "";
+  creds = { name: $("#name").value.trim(), pass: $("#pass").value };
+  try { localStorage.setItem("banda-name", creds.name); } catch (e) {}
+  connect();
+});
+$("#send").onclick = sendMsg;
+$("#txt").addEventListener("keydown", (e) => { if (e.key === "Enter") sendMsg(); });
+$("#menu").onclick = () => $("#side").classList.toggle("open");
+$("#vjoin").onclick = () => (inVoice ? leaveVoice() : joinVoice());
+$("#vmute").onclick = () => {
+  muted = !muted;
+  localStream.getAudioTracks().forEach((t) => (t.enabled = !muted));
+  $("#vmute").textContent = muted ? "Riattiva" : "Muta";
+};
+try { $("#name").value = localStorage.getItem("banda-name") || ""; } catch (e) {}
+</script>
+</body>
+</html>
