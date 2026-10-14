@@ -4,13 +4,12 @@ const fs = require("fs");
 const path = require("path");
 const { WebSocketServer } = require("ws");
 
-const PORT = process.env.PORT || 3000;
-const ROOM_PASSWORD = process.env.ROOM_PASSWORD || ""; // opzionale
+const PORT = process.env.PORT || 10000;
+const ROOM_PASSWORD = process.env.ROOM_PASSWORD || "";
 const CHANNELS = ["generale", "giochi", "musica"];
 const FILE = path.join(__dirname, "messages.json");
-const KEEP = 200; // messaggi conservati per canale
+const KEEP = 200;
 
-// ---- cronologia messaggi (salvata su file) ----
 const history = {};
 CHANNELS.forEach((c) => (history[c] = []));
 try {
@@ -25,13 +24,12 @@ function save() {
   saveTimer = setTimeout(() => fs.writeFile(FILE, JSON.stringify(history), () => {}), 1000);
 }
 
-// ---- server http + websocket ----
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, maxPayload: 16 * 1024 });
+const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 
-const clients = new Map(); // ws -> { id, name, voice }
+const clients = new Map(); // ws -> utente
 let nextId = 1;
 
 const send = (ws, obj) => ws.readyState === 1 && ws.send(JSON.stringify(obj));
@@ -39,8 +37,12 @@ function broadcast(obj) {
   const s = JSON.stringify(obj);
   for (const ws of clients.keys()) if (ws.readyState === 1) ws.send(s);
 }
-const pushUsers = () =>
-  broadcast({ t: "users", users: [...clients.values()].map((u) => ({ id: u.id, name: u.name, voice: u.voice })) });
+function pushUsers() {
+  broadcast({
+    t: "users",
+    users: [...clients.values()].map((u) => ({ id: u.id, name: u.name, voice: u.voice })),
+  });
+}
 
 wss.on("connection", (ws) => {
   let me = null;
@@ -49,7 +51,6 @@ wss.on("connection", (ws) => {
     let m;
     try { m = JSON.parse(raw); } catch { return; }
 
-    // il primo messaggio deve essere "join"
     if (!me) {
       if (m.t !== "join") return;
       if (ROOM_PASSWORD && m.pass !== ROOM_PASSWORD) return send(ws, { t: "denied" });
@@ -57,7 +58,7 @@ wss.on("connection", (ws) => {
       const taken = new Set([...clients.values()].map((u) => u.name));
       let name = base, i = 2;
       while (taken.has(name)) name = base + " " + i++;
-      me = { id: String(nextId++), name, voice: false };
+      me = { id: String(nextId++), name, voice: false, ws };
       clients.set(ws, me);
       send(ws, { t: "welcome", id: me.id, name, channels: CHANNELS, history });
       return pushUsers();
@@ -71,18 +72,23 @@ wss.on("connection", (ws) => {
       if (history[m.ch].length > KEEP) history[m.ch].shift();
       save();
       broadcast({ t: "msg", ch: m.ch, m: entry });
+
     } else if (m.t === "voice-join") {
+      if (me.voice) return;
       me.voice = true;
+      // avvisa chi è già in voce: sarà lui a chiamare il nuovo arrivato
       const peers = [...clients.values()].filter((u) => u.voice && u !== me).map((u) => u.id);
       send(ws, { t: "voice-peers", peers });
       pushUsers();
+
     } else if (m.t === "voice-leave") {
       me.voice = false;
       pushUsers();
+
     } else if (m.t === "signal") {
-      for (const [otherWs, u] of clients) {
-        if (u.id === String(m.to) && u.voice) send(otherWs, { t: "signal", from: me.id, data: m.data });
-      }
+      // inoltra offerte, risposte e candidati ICE al destinatario
+      const target = [...clients.values()].find((u) => u.id === String(m.to) && u.voice);
+      if (target) send(target.ws, { t: "signal", from: me.id, data: m.data });
     }
   });
 
