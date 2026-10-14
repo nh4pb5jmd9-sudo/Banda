@@ -320,15 +320,39 @@ async function joinVoice() {
 
 function leaveVoice(notify = true) {
   if (!inVoice) return;
-  inVoice = false;
-  Object.keys(pcs).forEach(closePeer);
-  if (localStream) localStream.getTracks().forEach((t) => t.stop());
+  
+  // ferma tutti gli stream audio remoti
+  try {
+    Object.keys(pcs).forEach((id) => {
+      try {
+        if (pcs[id]) pcs[id].close();
+        delete pcs[id];
+      } catch (e) { }
+    });
+  } catch (e) { }
+
+  // ferma il tuo microfono
+  try {
+    if (localStream) {
+      localStream.getTracks().forEach((t) => {
+        try { t.stop(); } catch (e) { }
+      });
+    }
+  } catch (e) { }
+  
   localStream = null;
-  $("#vjoin").classList.remove("rosso");
+  inVoice = false; // questo deve essere prima di cambiar UI
+  
+  // aggiorna UI
+  $("#vox").classList.remove("live", "parla");
   $("#vjoin").textContent = "Connetti";
-  $("#vjoin").classList.replace("bottone rosso", "bottone");
+  $("#vjoin").classList.remove("rosso");
   $("#vmute").hidden = true;
-  if (notify) send({ t: "voice-leave" });
+  
+  // avvisa il server solo se tutto è andato bene
+  if (notify) {
+    try { send({ t: "voice-leave" }); } catch (e) { }
+  }
 }
 
 // Crea la connessione verso un amico. Chi la crea (initiator) invia l'offerta.
