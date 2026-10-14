@@ -3,86 +3,94 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Falò</title>
+<title>NEXUS</title>
 <style>
 :root{
-  --carbone:#1c1714;--pannello:#2a221d;--brace:#ff8a3d;--brace-scuro:#c85a1e;
-  --crema:#f4e9dc;--sbiadito:#a8998a;--linea:#3d332c;--rosso:#ff6b5b;
+  --bg:#05070d;--bg2:#0a1020;
+  --vetro:rgba(14,22,40,.62);--bordo:rgba(0,229,255,.18);
+  --ciano:#00e5ff;--viola:#b400ff;--testo:#e6f7ff;--sbiadito:#6f85a6;--rosso:#ff3d7f;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:radial-gradient(ellipse at 50% -20%,#3a2a1f 0%,var(--carbone) 60%);color:var(--crema);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+body{
+  background:
+    radial-gradient(circle at 15% 0%,rgba(0,229,255,.12),transparent 40%),
+    radial-gradient(circle at 90% 100%,rgba(180,0,255,.14),transparent 45%),
+    var(--bg);
+  color:var(--testo);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
-:focus-visible{outline:2px solid var(--brace);outline-offset:3px}
-h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:-0.01em;margin:0}
+:focus-visible{outline:2px solid var(--ciano);outline-offset:3px}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;font-size:11px;color:var(--sbiadito)}
 
 /* ---------- ingresso ---------- */
 #join{display:flex;align-items:center;justify-content:center;min-height:100%;padding:24px}
-#join form{width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;text-align:center}
-#join .fiamma{font-size:56px;line-height:1;animation:ondeggia 3s ease-in-out infinite}
-#join h1{font-size:40px}
-#join .intro{margin:0 0 6px;color:var(--sbiadito);font-size:15px}
-#join input{background:var(--pannello);border:1px solid var(--linea);border-radius:14px;padding:14px 16px;text-align:center}
-#join input:focus{border-color:var(--brace)}
-.bottone{background:var(--brace);color:#2a1205;border:0;border-radius:14px;padding:14px 18px;font-weight:700;font-size:16px;box-shadow:0 6px 20px rgba(255,138,61,.25)}
-.bottone:active{transform:translateY(1px)}
-.bottone.secondario{background:var(--pannello);color:var(--crema);box-shadow:none;border:1px solid var(--linea);font-weight:600}
-.bottone.rosso{background:var(--rosso);color:#3a0a04;box-shadow:none}
-#err{color:var(--rosso);min-height:1.4em;margin:0;font-size:14px}
+#join form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;padding:32px 26px;border-radius:24px;background:var(--vetro);border:1px solid var(--bordo);box-shadow:0 0 60px rgba(0,229,255,.08),inset 0 1px 0 rgba(255,255,255,.04);backdrop-filter:blur(14px)}
+#join h1{margin:0;font-size:44px;font-weight:800;letter-spacing:.12em;background:linear-gradient(90deg,var(--ciano),var(--viola));-webkit-background-clip:text;background-clip:text;color:transparent}
+#join .intro{margin:0 0 6px;color:var(--sbiadito);font-size:14px}
+#join input{background:rgba(0,0,0,.35);border:1px solid var(--bordo);border-radius:12px;padding:14px 16px;outline:none;transition:border-color .2s,box-shadow .2s}
+#join input:focus{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(0,229,255,.15)}
+.bottone{background:linear-gradient(90deg,var(--ciano),#00a8ff);color:#001018;border:0;border-radius:12px;padding:13px 16px;font-weight:800;letter-spacing:.04em;box-shadow:0 0 24px rgba(0,229,255,.35);transition:transform .15s,box-shadow .2s}
+.bottone:hover{box-shadow:0 0 34px rgba(0,229,255,.55)}
+.bottone:active{transform:scale(.98)}
+.bottone.secondario{background:transparent;color:var(--ciano);border:1px solid var(--bordo);box-shadow:none}
+.bottone.rosso{background:linear-gradient(90deg,var(--rosso),#ff7a4d);color:#1a0008;box-shadow:0 0 24px rgba(255,61,127,.35)}
+#err{color:var(--rosso);min-height:1.4em;margin:0;font-size:13px}
 
 /* ---------- app ---------- */
-#app{display:none;height:100%}
+#app{display:none;height:100%;gap:0}
 #app.on{display:flex}
-#side{width:270px;flex:none;background:var(--pannello);border-right:1px solid var(--linea);display:flex;flex-direction:column;padding:18px 14px;gap:22px;overflow-y:auto}
-.logo{display:flex;align-items:center;gap:10px}
-.logo span{font-family:Georgia,serif;font-size:24px;font-weight:700}
-.etichetta{font-size:12px;letter-spacing:.08em;text-transform:none;color:var(--sbiadito);margin:0 8px 8px;font-weight:600}
-.stanza{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-radius:12px;padding:10px 12px;color:var(--sbiadito);font-size:15px}
-.stanza .ico{width:24px;text-align:center;font-size:16px}
-.stanza:hover{background:rgba(255,138,61,.08);color:var(--crema)}
-.stanza.on{background:rgba(255,138,61,.16);color:var(--crema);font-weight:700;box-shadow:inset 3px 0 0 var(--brace)}
-#vox{background:var(--carbone);border:1px solid var(--linea);border-radius:18px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
-#cerchio{width:92px;height:92px;border-radius:50%;background:var(--pannello);border:2px solid var(--linea);display:grid;place-items:center;font-size:34px;transition:box-shadow .3s,border-color .3s}
-#vox.live #cerchio{border-color:var(--brace);box-shadow:0 0 0 6px rgba(255,138,61,.15),0 0 28px rgba(255,138,61,.45)}
-#vox.parla #cerchio{animation:respira 1s ease-in-out infinite}
-#vmsg{margin:0;font-size:14px;color:var(--sbiadito);min-height:2.6em}
+#side{width:280px;flex:none;background:var(--vetro);border-right:1px solid var(--bordo);backdrop-filter:blur(16px);display:flex;flex-direction:column;padding:20px 14px;gap:24px;overflow-y:auto}
+.logo{font-size:20px;font-weight:800;letter-spacing:.2em;background:linear-gradient(90deg,var(--ciano),var(--viola));-webkit-background-clip:text;background-clip:text;color:transparent;padding-left:6px}
+.portale{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:12px;padding:10px 12px;color:var(--sbiadito);transition:all .2s}
+.portale::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--sbiadito);transition:all .2s}
+.portale:hover{color:var(--testo);border-color:var(--bordo)}
+.portale.on{color:var(--testo);border-color:var(--ciano);background:rgba(0,229,255,.08);box-shadow:0 0 18px rgba(0,229,255,.15) inset}
+.portale.on::before{background:var(--ciano);box-shadow:0 0 10px var(--ciano)}
+#vox{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 14px;border-radius:18px;border:1px solid var(--bordo);background:rgba(0,0,0,.3);text-align:center}
+#anello{width:96px;height:96px;border-radius:50%;border:2px solid rgba(111,133,166,.4);display:grid;place-items:center;font-size:30px;transition:all .3s}
+#vox.live #anello{border-color:var(--ciano);box-shadow:0 0 0 8px rgba(0,229,255,.08),0 0 32px rgba(0,229,255,.45);animation:pulsa 1.6s ease-in-out infinite}
+#vox.live.parla #anello{border-color:var(--viola);box-shadow:0 0 0 10px rgba(180,0,255,.12),0 0 40px rgba(180,0,255,.6)}
+#vmsg{margin:0;font-size:13px;color:var(--sbiadito);min-height:2.6em}
 .riga{display:flex;gap:8px;width:100%}
-.riga .bottone{flex:1;padding:11px 10px;font-size:15px}
+.riga .bottone{flex:1;padding:10px;font-size:14px}
 .persona{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px}
-.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff;flex:none;font-family:Georgia,serif}
+.avatar{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;color:#001018;flex:none;box-shadow:0 0 12px rgba(0,229,255,.25)}
 .persona .nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.persona .chip{font-size:12px;color:#2a1205;background:var(--brace);border-radius:999px;padding:2px 8px;font-weight:700}
+.persona .chip{font-size:10px;color:#001018;background:var(--ciano);border-radius:6px;padding:2px 6px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
 
 #main{flex:1;display:flex;flex-direction:column;min-width:0}
-#top{display:flex;align-items:center;gap:12px;padding:14px 20px;padding-top:calc(14px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--linea);background:rgba(28,23,20,.6)}
-#top h1{font-size:20px}
-#top .sotto{font-size:13px;color:var(--sbiadito)}
-#menu{display:none;background:var(--pannello);border:1px solid var(--linea);border-radius:10px;padding:6px 12px;color:var(--crema)}
-#conn{margin-left:auto;font-size:13px;color:var(--rosso)}
-#msgs{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
-.msg{display:flex;gap:12px;max-width:620px;animation:entra .25s ease-out}
-.msg .testa{font-size:13px;color:var(--sbiadito);margin-bottom:4px}
-.msg .testa b{color:var(--brace);font-family:Georgia,serif;margin-right:8px;font-size:14px}
-.msg .corpo{background:var(--pannello);border:1px solid var(--linea);padding:10px 14px;border-radius:4px 18px 18px 18px;white-space:pre-wrap;overflow-wrap:anywhere}
+#top{display:flex;align-items:center;gap:14px;padding:16px 22px;padding-top:calc(16px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--bordo);background:rgba(5,7,13,.6);backdrop-filter:blur(12px)}
+#top h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.02em}
+#top .mono{margin-top:2px}
+#menu{display:none;background:var(--vetro);border:1px solid var(--bordo);border-radius:10px;padding:6px 12px;color:var(--ciano)}
+#conn{margin-left:auto;font-size:12px;color:var(--rosso)}
+#msgs{flex:1;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;gap:12px;max-width:680px;animation:entra .3s ease-out}
+.msg .testa{display:flex;gap:10px;align-items:baseline;margin-bottom:4px}
+.msg .testa b{font-size:13px;color:var(--ciano);font-weight:700;letter-spacing:.02em}
+.msg .testa span{font-size:11px;color:var(--sbiadito);font-family:ui-monospace,Menlo,monospace}
+.msg .corpo{background:var(--vetro);border:1px solid var(--bordo);border-left:2px solid var(--ciano);padding:10px 14px;border-radius:6px 14px 14px 14px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 0 20px rgba(0,229,255,.05)}
 .msg.mio{flex-direction:row-reverse;margin-left:auto}
-.msg.mio .testa{text-align:right}
-.msg.mio .testa b{color:var(--crema)}
-.msg.mio .corpo{background:var(--brace-scuro);border-color:transparent;color:#fff6ee;border-radius:18px 4px 18px 18px}
-.vuoto{margin:auto;color:var(--sbiadito);text-align:center;font-size:15px}
-.vuoto .fiamma{font-size:44px;display:block;margin-bottom:8px}
-#bar{display:flex;gap:10px;padding:14px 20px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--linea);background:rgba(28,23,20,.6)}
-#txt{flex:1;min-width:0;background:var(--pannello);border:1px solid var(--linea);border-radius:22px;padding:12px 18px}
-#txt:focus{border-color:var(--brace)}
-#send{background:var(--brace);color:#2a1205;border:0;border-radius:22px;padding:0 20px;font-weight:700}
+.msg.mio .testa{justify-content:flex-end}
+.msg.mio .testa b{color:var(--viola)}
+.msg.mio .corpo{border:1px solid rgba(180,0,255,.35);border-right:2px solid var(--viola);border-left:1px solid rgba(180,0,255,.35);border-radius:14px 6px 14px 14px;box-shadow:0 0 20px rgba(180,0,255,.1)}
+.msg.mio .avatar{box-shadow:0 0 12px rgba(180,0,255,.4)}
+.vuoto{margin:auto;color:var(--sbiadito);text-align:center}
+.vuoto b{display:block;color:var(--testo);font-size:16px;margin-bottom:6px}
+#bar{display:flex;gap:10px;padding:14px 22px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--bordo);background:rgba(5,7,13,.6);backdrop-filter:blur(12px)}
+#txt{flex:1;min-width:0;background:rgba(0,0,0,.4);border:1px solid var(--bordo);border-radius:12px;padding:12px 16px;outline:none;transition:border-color .2s,box-shadow .2s}
+#txt:focus{border-color:var(--ciano);box-shadow:0 0 16px rgba(0,229,255,.2)}
+#send{background:var(--ciano);color:#001018;border:0;border-radius:12px;padding:0 20px;font-weight:800;box-shadow:0 0 18px rgba(0,229,255,.35)}
 
-@keyframes respira{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-@keyframes ondeggia{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
-@keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes pulsa{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 @media (max-width:760px){
-  #side{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-105%);transition:transform .25s;width:min(300px,86vw);padding-top:calc(18px + env(safe-area-inset-top,0px));box-shadow:8px 0 30px rgba(0,0,0,.4)}
+  #side{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-105%);transition:transform .3s;width:min(300px,86vw);padding-top:calc(20px + env(safe-area-inset-top,0px));box-shadow:8px 0 40px rgba(0,0,0,.6)}
   #side.open{transform:none}
   #menu{display:block}
 }
@@ -93,40 +101,39 @@ h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:700;letter-spacing
 
 <div id="join">
   <form id="jf">
-    <div class="fiamma">🔥</div>
-    <h1>Falò</h1>
-    <p class="intro">Il posto dove si chiacchiera con gli amici, in chat e a voce.</p>
-    <input id="name" placeholder="Come ti chiami?" maxlength="24" autocomplete="nickname" required>
-    <input id="pass" type="password" placeholder="Parola d'ordine (se c'è)" autocomplete="off">
+    <h1>NEXUS</h1>
+    <p class="intro">Chat e voce per il tuo gruppo. Scegli un nome e collegati.</p>
+    <input id="name" placeholder="Il tuo nome" maxlength="24" autocomplete="nickname" required>
+    <input id="pass" type="password" placeholder="Codice di accesso (se c'è)" autocomplete="off">
     <p id="err" role="alert"></p>
-    <button class="bottone" type="submit">Entra nel falò</button>
+    <button class="bottone" type="submit">Collegati</button>
   </form>
 </div>
 
 <div id="app">
   <aside id="side">
-    <div class="logo"><span>🔥 Falò</span></div>
+    <div class="logo">NEXUS</div>
 
     <section>
-      <p class="etichetta">Stanze</p>
-      <div id="chs"></div>
+      <p class="mono">Canali</p>
+      <div id="chs" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
     </section>
 
     <section>
-      <p class="etichetta">Attorno al fuoco</p>
-      <div id="vox">
-        <div id="cerchio">🎙️</div>
-        <p id="vmsg">Nessuno sta parlando.</p>
+      <p class="mono">Voce</p>
+      <div id="vox" style="margin-top:8px">
+        <div id="anello">◉</div>
+        <p id="vmsg">Nessuno in voce.</p>
         <div class="riga">
-          <button class="bottone" id="vjoin">Siediti</button>
-          <button class="bottone secondario" id="vmute" hidden>Silenzia</button>
+          <button class="bottone" id="vjoin">Connetti</button>
+          <button class="bottone secondario" id="vmute" hidden>Muto</button>
         </div>
       </div>
     </section>
 
     <section>
-      <p class="etichetta" id="uh">Presenti</p>
-      <div id="users"></div>
+      <p class="mono" id="uh">Online</p>
+      <div id="users" style="margin-top:8px"></div>
     </section>
   </aside>
 
@@ -135,7 +142,7 @@ h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:700;letter-spacing
       <button id="menu" aria-label="Apri il menu">☰</button>
       <div>
         <h1 id="title"></h1>
-        <div class="sotto">Scrivi qualcosa per far sentire la tua voce</div>
+        <div class="mono">Canale attivo</div>
       </div>
       <span id="conn"></span>
     </header>
@@ -150,7 +157,7 @@ h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:700;letter-spacing
 <script>
 const $ = (s) => document.querySelector(s);
 const ICE = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }];
-const TONI = ["#c85a1e","#7a5c3e","#b5452f","#8a6d2e","#5e6b3f","#9c4a6b","#3f6b6b","#6b4a8a"];
+const TONI = ["#00e5ff","#b400ff","#00ffa3","#ff3d7f","#ffd166","#4d9cff","#c3ff3d","#ff7a4d"];
 
 let ws, me = null, channels = [], history = {}, cur = "generale", users = [];
 let creds = null, inVoice = false, localStream = null, muted = false;
@@ -186,7 +193,7 @@ function connect() {
 
 function handle(m) {
   if (m.t === "denied") {
-    $("#err").textContent = "Parola d'ordine sbagliata.";
+    $("#err").textContent = "Codice di accesso non valido.";
     creds = null; ws.onclose = null; ws.close();
   } else if (m.t === "welcome") {
     me = { id: m.id, name: m.name };
@@ -218,15 +225,12 @@ function renderChannels() {
   box.innerHTML = "";
   channels.forEach((c) => {
     const b = document.createElement("button");
-    b.className = "stanza" + (c === cur ? " on" : "");
-    const ico = document.createElement("span");
-    ico.className = "ico";
-    ico.textContent = "🔥";
-    b.append(ico, document.createTextNode(c));
+    b.className = "portale" + (c === cur ? " on" : "");
+    b.textContent = c;
     b.onclick = () => { cur = c; renderChannels(); renderMsgs(); $("#side").classList.remove("open"); };
     box.appendChild(b);
   });
-  $("#title").textContent = cur.charAt(0).toUpperCase() + cur.slice(1);
+  $("#title").textContent = "# " + cur;
 }
 
 function renderUsers() {
@@ -242,15 +246,14 @@ function renderUsers() {
     if (u.voice) {
       const t = document.createElement("span");
       t.className = "chip";
-      t.textContent = "in voce";
+      t.textContent = "voce";
       r.appendChild(t);
     }
     box.appendChild(r);
   });
-  $("#uh").textContent = "Presenti (" + users.length + ")";
+  $("#uh").textContent = "Online · " + users.length;
   const inCall = users.filter((u) => u.voice).map((u) => u.name);
-  $("#vmsg").textContent = inCall.length ? "Attorno al fuoco: " + inCall.join(", ") : "Nessuno sta parlando.";
-  $("#cerchio").parentElement.classList.toggle("parla", inCall.length > 0 && inVoice);
+  $("#vmsg").textContent = inCall.length ? "In voce: " + inCall.join(", ") : "Nessuno in voce.";
 }
 
 function renderMsgs() {
@@ -260,7 +263,7 @@ function renderMsgs() {
   if (!list.length) {
     const e = document.createElement("div");
     e.className = "vuoto";
-    e.innerHTML = '<span class="fiamma">🔥</span>Il fuoco è acceso.<br>Scrivi il primo messaggio.';
+    e.innerHTML = "<b>Nessun messaggio ancora</b>Scrivi il primo per iniziare.";
     box.appendChild(e);
     return;
   }
@@ -269,12 +272,14 @@ function renderMsgs() {
     const row = document.createElement("div");
     row.className = "msg" + (mio ? " mio" : "");
     const col = document.createElement("div");
-    col.style.maxWidth = "100%";
+    col.style.minWidth = "0";
     const testa = document.createElement("div");
     testa.className = "testa";
     const b = document.createElement("b");
     b.textContent = mio ? "Tu" : m.user;
-    testa.append(b, new Date(m.ts).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }));
+    const ora = document.createElement("span");
+    ora.textContent = new Date(m.ts).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+    testa.append(b, ora);
     const corpo = document.createElement("div");
     corpo.className = "corpo";
     corpo.textContent = m.text;
@@ -297,15 +302,15 @@ async function joinVoice() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
   } catch (e) {
-    $("#vmsg").textContent = "Il microfono non è disponibile. Controlla i permessi (serve HTTPS).";
+    $("#vmsg").textContent = "Microfono non disponibile. Controlla i permessi (serve HTTPS).";
     return;
   }
   inVoice = true; muted = false;
   $("#vox").classList.add("live");
-  $("#vjoin").textContent = "Alzati";
+  $("#vjoin").textContent = "Disconnetti";
   $("#vjoin").classList.replace("bottone", "bottone rosso");
   $("#vmute").hidden = false;
-  $("#vmute").textContent = "Silenzia";
+  $("#vmute").textContent = "Muto";
   send({ t: "voice-join" });
 }
 
@@ -316,7 +321,7 @@ function leaveVoice(notify = true) {
   if (localStream) localStream.getTracks().forEach((t) => t.stop());
   localStream = null;
   $("#vox").classList.remove("live", "parla");
-  $("#vjoin").textContent = "Siediti";
+  $("#vjoin").textContent = "Connetti";
   $("#vjoin").classList.replace("bottone rosso", "bottone");
   $("#vmute").hidden = true;
   if (notify) send({ t: "voice-leave" });
@@ -376,7 +381,7 @@ $("#jf").addEventListener("submit", (e) => {
   e.preventDefault();
   $("#err").textContent = "";
   creds = { name: $("#name").value.trim(), pass: $("#pass").value };
-  try { localStorage.setItem("falo-nome", creds.name); } catch (e) {}
+  try { localStorage.setItem("nexus-nome", creds.name); } catch (e) {}
   connect();
 });
 $("#send").onclick = sendMsg;
@@ -386,9 +391,9 @@ $("#vjoin").onclick = () => (inVoice ? leaveVoice() : joinVoice());
 $("#vmute").onclick = () => {
   muted = !muted;
   localStream.getAudioTracks().forEach((t) => (t.enabled = !muted));
-  $("#vmute").textContent = muted ? "Riattiva" : "Silenzia";
+  $("#vmute").textContent = muted ? "Riattiva" : "Muto";
 };
-try { $("#name").value = localStorage.getItem("falo-nome") || ""; } catch (e) {}
+try { $("#name").value = localStorage.getItem("nexus-nome") || ""; } catch (e) {}
 </script>
 </body>
 </html>
