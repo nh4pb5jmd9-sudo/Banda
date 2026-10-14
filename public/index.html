@@ -298,6 +298,8 @@ function sendMsg() {
 }
 
 /* ---------- voce (WebRTC) ---------- */
+const audioCtx = () => { if (!window._ac) window._ac = new (window.AudioContext || window.webkitAudioContext)(); return window._ac; };
+
 async function joinVoice() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
@@ -305,6 +307,8 @@ async function joinVoice() {
     $("#vmsg").textContent = "Microfono non disponibile. Controlla i permessi (serve HTTPS).";
     return;
   }
+  // sblocca l'audio su iPhone/Safari con il tocco dell'utente
+  try { audioCtx().resume(); } catch (e) {}
   inVoice = true; muted = false;
   $("#vox").classList.add("live");
   $("#vjoin").textContent = "Disconnetti";
@@ -327,6 +331,7 @@ function leaveVoice(notify = true) {
   if (notify) send({ t: "voice-leave" });
 }
 
+// Crea la connessione verso un amico. Chi la crea (initiator) invia l'offerta.
 function makePeer(id, initiator) {
   if (pcs[id]) return pcs[id];
   const pc = new RTCPeerConnection({ iceServers: ICE });
@@ -343,22 +348,24 @@ function makePeer(id, initiator) {
       audios[id] = a;
     }
     a.srcObject = e.streams[0];
+    a.play().catch(() => {});
   };
   pc.onconnectionstatechange = () => {
-    if (pc.connectionState === "failed") closePeer(id);
+    if (pc.connectionState === "failed") { closePeer(id); }
   };
   if (initiator) {
     pc.createOffer()
       .then((o) => pc.setLocalDescription(o))
-      .then(() => send({ t: "signal", to: id, data: { sdp: pc.localDescription } }));
+      .then(() => send({ t: "signal", to: id, data: { sdp: pc.localDescription } }))
+      .catch(() => {});
   }
   return pc;
 }
 
 async function onSignal(from, data) {
   if (!inVoice) return;
-  const pc = pcs[from] || makePeer(from, false);
   try {
+    const pc = pcs[from] || makePeer(from, false);
     if (data.sdp) {
       await pc.setRemoteDescription(data.sdp);
       if (data.sdp.type === "offer") {
@@ -368,12 +375,9 @@ async function onSignal(from, data) {
     } else if (data.ice) {
       await pc.addIceCandidate(data.ice);
     }
-  } catch (e) {}
-}
-
-function closePeer(id) {
-  if (pcs[id]) { pcs[id].close(); delete pcs[id]; }
-  if (audios[id]) { audios[id].srcObject = null; audios[id].remove(); delete audios[id]; }
+  } catch (e) {
+    console.log("errore segnale voce", e);
+  }
 }
 
 /* ---------- eventi ---------- */
