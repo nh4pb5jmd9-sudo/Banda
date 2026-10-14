@@ -50,16 +50,21 @@ button{cursor:pointer}
 .portale:hover{color:var(--testo);border-color:var(--bordo)}
 .portale.on{color:var(--testo);border-color:var(--ciano);background:rgba(0,229,255,.08);box-shadow:0 0 18px rgba(0,229,255,.15) inset}
 .portale.on::before{background:var(--ciano);box-shadow:0 0 10px var(--ciano)}
+
 #vox{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 14px;border-radius:18px;border:1px solid var(--bordo);background:rgba(0,0,0,.3);text-align:center}
-#anello{width:96px;height:96px;border-radius:50%;border:2px solid rgba(111,133,166,.4);display:grid;place-items:center;font-size:30px;transition:all .3s}
-#vox.live #anello{border-color:var(--ciano);box-shadow:0 0 0 8px rgba(0,229,255,.08),0 0 32px rgba(0,229,255,.45);animation:pulsa 1.6s ease-in-out infinite}
-#vox.live.parla #anello{border-color:var(--viola);box-shadow:0 0 0 10px rgba(180,0,255,.12),0 0 40px rgba(180,0,255,.6)}
+#videoGrid{display:grid;grid-template-columns:1fr;gap:10px;width:100%;margin-bottom:10px;max-height:400px;overflow-y:auto}
+.videoBox{position:relative;border-radius:12px;border:1px solid rgba(0,229,255,.3);background:#000;aspect-ratio:16/9;overflow:hidden;display:grid;place-items:center}
+.videoBox.locale{border-color:var(--viola)}
+.videoBox video{width:100%;height:100%;object-fit:cover}
+.videoNome{position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,.6);padding:4px 8px;border-radius:6px;font-size:11px;color:var(--ciano);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.videoBox.muto video{opacity:.5}
+
 #vmsg{margin:0;font-size:13px;color:var(--sbiadito);min-height:2.6em}
 .riga{display:flex;gap:8px;width:100%}
 .riga .bottone{flex:1;padding:10px;font-size:14px}
 .persona{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px}
 .avatar{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;color:#001018;flex:none;box-shadow:0 0 12px rgba(0,229,255,.25)}
-.persona .nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.persona .nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .persona .chip{font-size:10px;color:#001018;background:var(--ciano);border-radius:6px;padding:2px 6px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
 
 #main{flex:1;display:flex;flex-direction:column;min-width:0}
@@ -86,14 +91,19 @@ button{cursor:pointer}
 #txt:focus{border-color:var(--ciano);box-shadow:0 0 16px rgba(0,229,255,.2)}
 #send{background:var(--ciano);color:#001018;border:0;border-radius:12px;padding:0 20px;font-weight:800;box-shadow:0 0 18px rgba(0,229,255,.35)}
 
-@keyframes pulsa{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
 @keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 @media (max-width:760px){
   #side{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-105%);transition:transform .3s;width:min(300px,86vw);padding-top:calc(20px + env(safe-area-inset-top,0px));box-shadow:8px 0 40px rgba(0,0,0,.6)}
   #side.open{transform:none}
   #menu{display:block}
+  #videoGrid{grid-template-columns:repeat(2,1fr);max-height:300px}
 }
+
+@media (min-width:761px){
+  #videoGrid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));max-height:500px}
+}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -122,11 +132,12 @@ button{cursor:pointer}
     <section>
       <p class="mono">Voce</p>
       <div id="vox" style="margin-top:8px">
-        <div id="anello">◉</div>
+        <div id="videoGrid"></div>
         <p id="vmsg">Nessuno in voce.</p>
         <div class="riga">
           <button class="bottone" id="vjoin">Connetti</button>
-          <button class="bottone secondario" id="vmute" hidden>Muto</button>
+          <button class="bottone secondario" id="vcam" hidden>📹 Camera</button>
+          <button class="bottone secondario" id="vmute" hidden>🎙️ Muta</button>
         </div>
       </div>
     </section>
@@ -160,8 +171,8 @@ const ICE = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.goo
 const TONI = ["#00e5ff","#b400ff","#00ffa3","#ff3d7f","#ffd166","#4d9cff","#c3ff3d","#ff7a4d"];
 
 let ws, me = null, channels = [], history = {}, cur = "generale", users = [];
-let creds = null, inVoice = false, localStream = null, muted = false;
-const pcs = {}, audios = {};
+let creds = null, inVoice = false, localStream = null, mutedMic = false, mutedCam = false;
+const pcs = {}, audios = {}, videoBoxes = {};
 
 /* ---------- utilità ---------- */
 function tono(nome) {
@@ -297,31 +308,37 @@ function sendMsg() {
   $("#txt").value = "";
 }
 
-/* ---------- voce (WebRTC) ---------- */
+/* ---------- voce + video (WebRTC) ---------- */
 const audioCtx = () => { if (!window._ac) window._ac = new (window.AudioContext || window.webkitAudioContext)(); return window._ac; };
 
 async function joinVoice() {
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    localStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { echoCancellation: true, noiseSuppression: true },
+      video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
   } catch (e) {
-    $("#vmsg").textContent = "Microfono non disponibile. Controlla i permessi (serve HTTPS).";
+    $("#vmsg").textContent = "Microfono/camera non disponibili. Controlla i permessi (serve HTTPS).";
     return;
   }
-  // sblocca l'audio su iPhone/Safari con il tocco dell'utente
   try { audioCtx().resume(); } catch (e) {}
-  inVoice = true; muted = false;
-  $("#vox").classList.add("live");
+  inVoice = true; mutedMic = false; mutedCam = false;
+  
+  // Mostra video locale
+  addLocalVideo();
+  
   $("#vjoin").textContent = "Disconnetti";
   $("#vjoin").classList.add("rosso");
+  $("#vcam").hidden = false;
+  $("#vcam").textContent = "📹 Camera";
   $("#vmute").hidden = false;
-  $("#vmute").textContent = "Muto";
+  $("#vmute").textContent = "🎙️ Muta";
   send({ t: "voice-join" });
 }
 
 function leaveVoice(notify = true) {
   if (!inVoice) return;
   
-  // ferma tutti gli stream audio remoti
   try {
     Object.keys(pcs).forEach((id) => {
       try {
@@ -331,7 +348,6 @@ function leaveVoice(notify = true) {
     });
   } catch (e) { }
 
-  // ferma il tuo microfono
   try {
     if (localStream) {
       localStream.getTracks().forEach((t) => {
@@ -341,42 +357,84 @@ function leaveVoice(notify = true) {
   } catch (e) { }
   
   localStream = null;
-  inVoice = false; // questo deve essere prima di cambiar UI
+  inVoice = false;
   
-  // aggiorna UI
-  $("#vox").classList.remove("live", "parla");
+  // Rimuovi video
+  document.getElementById("videoGrid").innerHTML = "";
+  
   $("#vjoin").textContent = "Connetti";
   $("#vjoin").classList.remove("rosso");
+  $("#vcam").hidden = true;
   $("#vmute").hidden = true;
   
-  // avvisa il server solo se tutto è andato bene
   if (notify) {
     try { send({ t: "voice-leave" }); } catch (e) { }
   }
 }
 
-// Crea la connessione verso un amico. Chi la crea (initiator) invia l'offerta.
+function addLocalVideo() {
+  const grid = document.getElementById("videoGrid");
+  const box = document.createElement("div");
+  box.className = "videoBox locale";
+  box.id = "video-local";
+  const video = document.createElement("video");
+  video.srcObject = localStream;
+  video.autoplay = true;
+  video.playsInline = true;
+  video.muted = true;
+  const label = document.createElement("div");
+  label.className = "videoNome";
+  label.textContent = me.name + " (tu)";
+  box.appendChild(video);
+  box.appendChild(label);
+  grid.appendChild(box);
+}
+
+function addRemoteVideo(id, name) {
+  const grid = document.getElementById("videoGrid");
+  const box = document.createElement("div");
+  box.className = "videoBox";
+  box.id = "video-" + id;
+  const video = document.createElement("video");
+  video.autoplay = true;
+  video.playsInline = true;
+  const label = document.createElement("div");
+  label.className = "videoNome";
+  label.textContent = name;
+  box.appendChild(video);
+  box.appendChild(label);
+  grid.appendChild(box);
+  videoBoxes[id] = { box, video };
+}
+
+function removeRemoteVideo(id) {
+  const el = document.getElementById("video-" + id);
+  if (el) el.remove();
+  delete videoBoxes[id];
+}
+
 function makePeer(id, initiator) {
   if (pcs[id]) return pcs[id];
   const pc = new RTCPeerConnection({ iceServers: ICE });
   pcs[id] = pc;
-  localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+  
+  localStream.getTracks().forEach((t) => {
+    if (t.kind === "audio" && !mutedMic) pc.addTrack(t, localStream);
+    if (t.kind === "video" && !mutedCam) pc.addTrack(t, localStream);
+  });
+  
   pc.onicecandidate = (e) => e.candidate && send({ t: "signal", to: id, data: { ice: e.candidate } });
   pc.ontrack = (e) => {
-    let a = audios[id];
-    if (!a) {
-      a = document.createElement("audio");
-      a.autoplay = true;
-      a.playsInline = true;
-      document.body.appendChild(a);
-      audios[id] = a;
+    const vb = videoBoxes[id];
+    if (vb) {
+      vb.video.srcObject = e.streams[0];
+      vb.video.play().catch(() => {});
     }
-    a.srcObject = e.streams[0];
-    a.play().catch(() => {});
   };
   pc.onconnectionstatechange = () => {
-    if (pc.connectionState === "failed") { closePeer(id); }
+    if (pc.connectionState === "failed") closePeer(id);
   };
+  
   if (initiator) {
     pc.createOffer()
       .then((o) => pc.setLocalDescription(o))
@@ -404,6 +462,31 @@ async function onSignal(from, data) {
   }
 }
 
+function closePeer(id) {
+  if (pcs[id]) { 
+    pcs[id].close(); 
+    delete pcs[id]; 
+  }
+  removeRemoteVideo(id);
+}
+
+/* ---------- controlli microfono e camera ---------- */
+$("#vcam").addEventListener("click", () => {
+  if (!localStream) return;
+  mutedCam = !mutedCam;
+  localStream.getVideoTracks().forEach((t) => (t.enabled = !mutedCam));
+  $("#vcam").textContent = mutedCam ? "🚫 Camera" : "📹 Camera";
+  const localBox = document.getElementById("video-local");
+  if (localBox) localBox.classList.toggle("muto", mutedCam);
+});
+
+$("#vmute").addEventListener("click", () => {
+  if (!localStream) return;
+  mutedMic = !mutedMic;
+  localStream.getAudioTracks().forEach((t) => (t.enabled = !mutedMic));
+  $("#vmute").textContent = mutedMic ? "🔇 Audio" : "🎙️ Muta";
+});
+
 /* ---------- eventi ---------- */
 $("#jf").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -416,11 +499,6 @@ $("#send").onclick = sendMsg;
 $("#txt").addEventListener("keydown", (e) => { if (e.key === "Enter") sendMsg(); });
 $("#menu").onclick = () => $("#side").classList.toggle("open");
 $("#vjoin").onclick = () => (inVoice ? leaveVoice() : joinVoice());
-$("#vmute").onclick = () => {
-  muted = !muted;
-  localStream.getAudioTracks().forEach((t) => (t.enabled = !muted));
-  $("#vmute").textContent = muted ? "Riattiva" : "Muto";
-};
 try { $("#name").value = localStorage.getItem("nexus-nome") || ""; } catch (e) {}
 </script>
 </body>
