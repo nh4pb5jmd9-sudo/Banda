@@ -1,0 +1,9 @@
+{
+  "name": "banda-chat",
+  "version": "1.0.0",
+  "description": "Chat e chiamate vocali tra amici, stile Discord",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.19.2", "ws": "^8.17.0" }
+}
