@@ -312,7 +312,7 @@ async function joinVoice() {
   inVoice = true; muted = false;
   $("#vox").classList.add("live");
   $("#vjoin").textContent = "Disconnetti";
-  $("#vjoin").classList.replace("bottone", "bottone rosso");
+  $("#vjoin").classList.add("rosso");
   $("#vmute").hidden = false;
   $("#vmute").textContent = "Muto";
   send({ t: "voice-join" });
@@ -324,7 +324,7 @@ function leaveVoice(notify = true) {
   Object.keys(pcs).forEach(closePeer);
   if (localStream) localStream.getTracks().forEach((t) => t.stop());
   localStream = null;
-  $("#vox").classList.remove("live", "parla");
+  $("#vjoin").classList.remove("rosso");
   $("#vjoin").textContent = "Connetti";
   $("#vjoin").classList.replace("bottone rosso", "bottone");
   $("#vmute").hidden = true;
