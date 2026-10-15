@@ -1,1082 +1,838 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEXUS — Chat Futuristica</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    :root {
-      --bg: #05070d;
-      --vetro: rgba(14, 22, 40, 0.62);
-      --bordo: rgba(0, 229, 255, 0.18);
-      --ciano: #00e5ff;
-      --viola: #b400ff;
-      --testo: #e6f7ff;
-      --sbiadito: #6f85a6;
-      --rosso: #ff3d7f;
-      --oro: #ffd700;
-    }
-
-    body {
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--testo);
-      overflow: hidden;
-      background: radial-gradient(circle at 20% 50%, rgba(0, 229, 255, 0.1), transparent),
-                  radial-gradient(circle at 80% 80%, rgba(180, 0, 255, 0.1), transparent),
-                  var(--bg);
-    }
-
-    /* === LOGIN === */
-    #loginModal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    }
-
-    #loginModal.hidden {
-      display: none;
-    }
-
-    .loginBox {
-      background: var(--vetro);
-      border: 2px solid var(--viola);
-      border-radius: 20px;
-      padding: 40px;
-      width: 90%;
-      max-width: 400px;
-      backdrop-filter: blur(10px);
-      text-align: center;
-      animation: slideUp 0.5s ease;
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(50px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    .loginBox h1 {
-      font-size: 32px;
-      margin-bottom: 30px;
-      background: linear-gradient(135deg, var(--ciano), var(--viola));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 900;
-    }
-
-    .loginBox input {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 15px;
-      background: rgba(0, 229, 255, 0.05);
-      border: 2px solid var(--bordo);
-      border-radius: 10px;
-      color: var(--testo);
-      font-size: 16px;
-      transition: all 0.3s;
-    }
-
-    .loginBox input:focus {
-      outline: none;
-      border-color: var(--ciano);
-      box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
-      background: rgba(0, 229, 255, 0.1);
-    }
-
-    .loginBox button {
-      width: 100%;
-      padding: 12px;
-      background: linear-gradient(135deg, var(--ciano), var(--viola));
-      border: none;
-      border-radius: 10px;
-      color: #000;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 10px;
-    }
-
-    .loginBox button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(0, 229, 255, 0.3);
-    }
-
-    .loginError {
-      color: var(--rosso);
-      margin-top: 15px;
-      font-size: 14px;
-      animation: shake 0.3s;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-10px); }
-      75% { transform: translateX(10px); }
-    }
-
-    /* === MAIN === */
-    #app {
-      display: flex;
-      height: 100vh;
-      gap: 10px;
-      padding: 10px;
-    }
-
-    #app.hidden {
-      display: none;
-    }
-
-    /* === SIDEBAR === */
-    #side {
-      width: 220px;
-      background: var(--vetro);
-      border: 1px solid var(--bordo);
-      border-radius: 15px;
-      display: flex;
-      flex-direction: column;
-      backdrop-filter: blur(10px);
-      overflow: hidden;
-    }
-
-    .sideHeader {
-      padding: 15px;
-      border-bottom: 1px solid var(--bordo);
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--ciano);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .channels {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
-
-    .channel {
-      padding: 10px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-bottom: 5px;
-      transition: all 0.3s;
-      font-size: 14px;
-      border-left: 3px solid transparent;
-    }
-
-    .channel:hover {
-      background: rgba(0, 229, 255, 0.1);
-    }
-
-    .channel.active {
-      background: rgba(0, 229, 255, 0.2);
-      border-left-color: var(--ciano);
-      color: var(--ciano);
-      font-weight: 600;
-      box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
-    }
-
-    .users {
-      border-top: 1px solid var(--bordo);
-      padding: 10px;
-      max-height: 150px;
-      overflow-y: auto;
-      font-size: 12px;
-    }
-
-    .userItem {
-      padding: 8px;
-      border-radius: 6px;
-      margin-bottom: 5px;
-      background: rgba(0, 229, 255, 0.08);
-      border: 1px solid var(--bordo);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      word-break: break-word;
-    }
-
-    .userAdmin {
-      color: var(--oro);
-      font-weight: 600;
-    }
-
-    .userActions {
-      display: flex;
-      gap: 3px;
-      font-size: 11px;
-    }
-
-    .userActions button {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--bordo);
-      color: var(--testo);
-      padding: 2px 5px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .userActions button:hover {
-      background: var(--rosso);
-      border-color: var(--rosso);
-    }
-
-    .sideFooter {
-      padding: 10px;
-      border-top: 1px solid var(--bordo);
-      font-size: 12px;
-      text-align: center;
-      color: var(--sbiadito);
-    }
-
-    .sideFooter input {
-      width: 100%;
-      padding: 6px;
-      background: rgba(0, 229, 255, 0.05);
-      border: 1px solid var(--bordo);
-      border-radius: 6px;
-      color: var(--testo);
-      margin-top: 5px;
-      font-size: 12px;
-    }
-
-    .sideFooter button {
-      width: 100%;
-      padding: 6px;
-      background: var(--rosso);
-      border: none;
-      border-radius: 6px;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 5px;
-      transition: all 0.3s;
-    }
-
-    .sideFooter button:hover {
-      background: #ff2563;
-    }
-
-    /* === MAIN CONTENT === */
-    #main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    #top {
-      background: var(--vetro);
-      border: 1px solid var(--bordo);
-      border-radius: 15px;
-      padding: 15px;
-      backdrop-filter: blur(10px);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #chName {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--ciano);
-      text-transform: capitalize;
-    }
-
-    .topRa {
-      display: flex;
-      gap: 10px;
-    }
-
-    .topBtn {
-      padding: 8px 15px;
-      background: rgba(0, 229, 255, 0.1);
-      border: 1px solid var(--bordo);
-      border-radius: 8px;
-      color: var(--ciano);
-      cursor: pointer;
-      transition: all 0.3s;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .topBtn:hover {
-      background: rgba(0, 229, 255, 0.2);
-      box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
-    }
-
-    /* === CHAT === */
-    #msgs {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 15px;
-      border: 1px solid var(--bordo);
-    }
-
-    .msg {
-      background: var(--vetro);
-      border: 2px solid var(--bordo);
-      border-radius: 10px;
-      padding: 12px;
-      backdrop-filter: blur(5px);
-      animation: msgIn 0.3s ease;
-      word-wrap: break-word;
-    }
-
-    .msg.own {
-      border-color: var(--viola);
-      margin-left: 20px;
-    }
-
-    .msg.admin {
-      border-color: var(--oro);
-    }
-
-    .sysMsg {
-      text-align: center;
-      font-size: 12px;
-      color: var(--sbiadito);
-      padding: 8px;
-      font-style: italic;
-    }
-
-    @keyframes msgIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .msgHeader {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-      font-size: 12px;
-    }
-
-    .msgName {
-      font-weight: 700;
-      color: var(--ciano);
-    }
-
-    .msgName.admin {
-      color: var(--oro);
-    }
-
-    .msgTime {
-      font-size: 11px;
-      color: var(--sbiadito);
-    }
-
-    .msgText {
-      font-size: 14px;
-      line-height: 1.4;
-      word-break: break-word;
-    }
-
-    .msgActions {
-      margin-top: 6px;
-      display: flex;
-      gap: 5px;
-      font-size: 11px;
-    }
-
-    .msgActions button {
-      background: rgba(0, 229, 255, 0.1);
-      border: 1px solid var(--bordo);
-      color: var(--testo);
-      padding: 3px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .msgActions button:hover {
-      background: var(--rosso);
-      border-color: var(--rosso);
-    }
-
-    /* === INPUT === */
-    #input {
-      display: flex;
-      gap: 8px;
-      background: var(--vetro);
-      border: 1px solid var(--bordo);
-      border-radius: 15px;
-      padding: 10px;
-      backdrop-filter: blur(10px);
-    }
-
-    #msgInput {
-      flex: 1;
-      background: rgba(0, 229, 255, 0.05);
-      border: 1px solid var(--bordo);
-      border-radius: 10px;
-      padding: 10px 12px;
-      color: var(--testo);
-      font-size: 14px;
-      transition: all 0.3s;
-    }
-
-    #msgInput:focus {
-      outline: none;
-      border-color: var(--ciano);
-      box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
-      background: rgba(0, 229, 255, 0.08);
-    }
-
-    #send {
-      padding: 10px 20px;
-      background: linear-gradient(135deg, var(--ciano), var(--viola));
-      border: none;
-      border-radius: 10px;
-      color: #000;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    #send:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
-    }
-
-    /* === VOICE/VIDEO === */
-    #voiceSection {
-      display: flex;
-      gap: 8px;
-      background: var(--vetro);
-      border: 1px solid var(--bordo);
-      border-radius: 15px;
-      padding: 10px;
-      backdrop-filter: blur(10px);
-    }
-
-    .voiceBtn {
-      padding: 10px 15px;
-      background: rgba(0, 229, 255, 0.1);
-      border: 1px solid var(--bordo);
-      border-radius: 8px;
-      color: var(--ciano);
-      cursor: pointer;
-      transition: all 0.3s;
-      font-weight: 600;
-    }
-
-    .voiceBtn:hover {
-      background: rgba(0, 229, 255, 0.2);
-    }
-
-    .voiceBtn.attivo {
-      background: var(--rosso);
-      border-color: var(--rosso);
-      color: #fff;
-      box-shadow: 0 0 15px rgba(255, 61, 127, 0.5);
-    }
-
-    #vids {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 8px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 15px;
-      border: 1px solid var(--bordo);
-      padding: 10px;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    video {
-      width: 100%;
-      border-radius: 10px;
-      background: #000;
-      border: 2px solid var(--viola);
-    }
-
-    video.remote {
-      border-color: var(--ciano);
-    }
-
-    /* === SCROLLBAR === */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(0, 229, 255, 0.05);
-      border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: rgba(0, 229, 255, 0.3);
-      border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 229, 255, 0.5);
-    }
-
-    /* === RESPONSIVE === */
-    @media (max-width: 768px) {
-      #app {
-        flex-direction: column;
-      }
-
-      #side {
-        width: 100%;
-        max-height: 120px;
-      }
-
-      .channels {
-        display: flex;
-        overflow-x: auto;
-        overflow-y: hidden;
-      }
-
-      .channel {
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-
-      #msgInput {
-        font-size: 16px;
-      }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NEXUS</title>
+<style>
+:root{
+  --bg:#05070d;--bg2:#0a1020;
+  --vetro:rgba(14,22,40,.62);--bordo:rgba(0,229,255,.18);
+  --ciano:#00e5ff;--viola:#b400ff;--testo:#e6f7ff;--sbiadito:#6f85a6;--rosso:#ff3d7f;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:
+    radial-gradient(circle at 15% 0%,rgba(0,229,255,.12),transparent 40%),
+    radial-gradient(circle at 90% 100%,rgba(180,0,255,.14),transparent 45%),
+    var(--bg);
+  color:var(--testo);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ciano);outline-offset:3px}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;font-size:11px;color:var(--sbiadito)}
+
+/* ---------- ingresso ---------- */
+#join{display:flex;align-items:center;justify-content:center;min-height:100%;padding:24px}
+#join form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;padding:32px 26px;border-radius:24px;background:var(--vetro);border:1px solid var(--bordo);box-shadow:0 0 60px rgba(0,229,255,.08),inset 0 1px 0 rgba(255,255,255,.04);backdrop-filter:blur(14px)}
+#join h1{margin:0;font-size:44px;font-weight:800;letter-spacing:.12em;background:linear-gradient(90deg,var(--ciano),var(--viola));-webkit-background-clip:text;background-clip:text;color:transparent}
+#join .intro{margin:0 0 6px;color:var(--sbiadito);font-size:14px}
+#join input{background:rgba(0,0,0,.35);border:1px solid var(--bordo);border-radius:12px;padding:14px 16px;outline:none;transition:border-color .2s,box-shadow .2s}
+#join input:focus{border-color:var(--ciano);box-shadow:0 0 0 3px rgba(0,229,255,.15)}
+.bottone{background:linear-gradient(90deg,var(--ciano),#00a8ff);color:#001018;border:0;border-radius:12px;padding:13px 16px;font-weight:800;letter-spacing:.04em;box-shadow:0 0 24px rgba(0,229,255,.35);transition:transform .15s,box-shadow .2s}
+.bottone:hover{box-shadow:0 0 34px rgba(0,229,255,.55)}
+.bottone:active{transform:scale(.98)}
+.bottone.secondario{background:transparent;color:var(--ciano);border:1px solid var(--bordo);box-shadow:none}
+.bottone.rosso{background:linear-gradient(90deg,var(--rosso),#ff7a4d);color:#1a0008;box-shadow:0 0 24px rgba(255,61,127,.35)}
+#err{color:var(--rosso);min-height:1.4em;margin:0;font-size:13px}
+
+/* ---------- app ---------- */
+#app{display:none;height:100%;gap:0}
+#app.on{display:flex}
+#side{width:280px;flex:none;background:var(--vetro);border-right:1px solid var(--bordo);backdrop-filter:blur(16px);display:flex;flex-direction:column;padding:20px 14px;gap:24px;overflow-y:auto}
+.logo{font-size:20px;font-weight:800;letter-spacing:.2em;background:linear-gradient(90deg,var(--ciano),var(--viola));-webkit-background-clip:text;background-clip:text;color:transparent;padding-left:6px}
+.portale{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:12px;padding:10px 12px;color:var(--sbiadito);transition:all .2s}
+.portale::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--sbiadito);transition:all .2s}
+.portale:hover{color:var(--testo);border-color:var(--bordo)}
+.portale.on{color:var(--testo);border-color:var(--ciano);background:rgba(0,229,255,.08);box-shadow:0 0 18px rgba(0,229,255,.15) inset}
+.portale.on::before{background:var(--ciano);box-shadow:0 0 10px var(--ciano)}
+
+#vox{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 14px;border-radius:18px;border:1px solid var(--bordo);background:rgba(0,0,0,.3);text-align:center}
+#videoGrid{display:grid;grid-template-columns:1fr;gap:10px;width:100%;margin-bottom:10px;max-height:400px;overflow-y:auto}
+.videoBox{position:relative;border-radius:12px;border:1px solid rgba(0,229,255,.3);background:#000;aspect-ratio:16/9;overflow:hidden;display:grid;place-items:center}
+.videoBox.locale{border-color:var(--viola)}
+.videoBox video{width:100%;height:100%;object-fit:cover}
+.videoNome{position:absolute;bottom:6px;left:6px;right:6px;background:rgba(0,0,0,.6);padding:4px 8px;border-radius:6px;font-size:11px;color:var(--ciano);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.videoBox.muto video{opacity:.5}
+
+#vmsg{margin:0;font-size:13px;color:var(--sbiadito);min-height:2.6em}
+.riga{display:flex;gap:8px;width:100%;flex-wrap:wrap}
+.riga .bottone{flex:1;padding:10px;font-size:14px;min-width:70px}
+.persona{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px}
+.avatar{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;color:#001018;flex:none;box-shadow:0 0 12px rgba(0,229,255,.25)}
+.persona .nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.persona .chip{font-size:10px;color:#001018;background:var(--ciano);border-radius:6px;padding:2px 6px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+
+/* impostazioni */
+#impostazioni{display:none;position:fixed;inset:0;background:rgba(5,7,13,.95);backdrop-filter:blur(20px);z-index:100;padding:20px;overflow-y:auto;padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+#impostazioni.on{display:flex;flex-direction:column}
+#impostazioni .box{max-width:500px;margin:0 auto;width:100%}
+#impostazioni h2{margin:0 0 16px;color:var(--ciano)}
+.settingGroup{margin-bottom:16px;padding:12px;border:1px solid var(--bordo);border-radius:12px;background:rgba(0,0,0,.3)}
+.settingGroup label{display:block;margin-bottom:6px;font-size:13px;color:var(--sbiadito)}
+.settingGroup select{width:100%;padding:10px;background:rgba(0,0,0,.4);border:1px solid var(--bordo);border-radius:8px;color:var(--testo);margin-bottom:8px;font-size:13px}
+.settingGroup select:focus{border-color:var(--ciano);outline:none}
+.diagnostica{padding:10px;background:rgba(0,229,255,.08);border-left:3px solid var(--ciano);border-radius:6px;margin-bottom:8px;font-size:13px;font-family:monospace;word-break:break-all}
+.diagnostica.ok{background:rgba(0,255,127,.08);border-color:#00ff7f}
+.diagnostica.errore{background:rgba(255,61,127,.08);border-color:var(--rosso)}
+.testBtn{background:rgba(0,229,255,.2);border:1px solid var(--ciano);color:var(--ciano);padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:8px;cursor:pointer;width:100%}
+.testBtn:active{background:rgba(0,229,255,.35)}
+.chiudiSetting{position:absolute;top:14px;right:14px;background:var(--ciano);color:#001018;border:0;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;font-weight:700}
+
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#top{display:flex;align-items:center;gap:14px;padding:16px 22px;padding-top:calc(16px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--bordo);background:rgba(5,7,13,.6);backdrop-filter:blur(12px)}
+#top h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.02em}
+#top .mono{margin-top:2px}
+#menu{display:none;background:var(--vetro);border:1px solid var(--bordo);border-radius:10px;padding:6px 12px;color:var(--ciano)}
+#conn{margin-left:auto;font-size:12px;color:var(--rosso)}
+#msgs{flex:1;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;gap:12px;max-width:680px;animation:entra .3s ease-out}
+.msg .testa{display:flex;gap:10px;align-items:baseline;margin-bottom:4px}
+.msg .testa b{font-size:13px;color:var(--ciano);font-weight:700;letter-spacing:.02em}
+.msg .testa span{font-size:11px;color:var(--sbiadito);font-family:ui-monospace,Menlo,monospace}
+.msg .corpo{background:var(--vetro);border:1px solid var(--bordo);border-left:2px solid var(--ciano);padding:10px 14px;border-radius:6px 14px 14px 14px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 0 20px rgba(0,229,255,.05)}
+.msg.mio{flex-direction:row-reverse;margin-left:auto}
+.msg.mio .testa{justify-content:flex-end}
+.msg.mio .testa b{color:var(--viola)}
+.msg.mio .corpo{border:1px solid rgba(180,0,255,.35);border-right:2px solid var(--viola);border-left:1px solid rgba(180,0,255,.35);border-radius:14px 6px 14px 14px;box-shadow:0 0 20px rgba(180,0,255,.1)}
+.msg.mio .avatar{box-shadow:0 0 12px rgba(180,0,255,.4)}
+.vuoto{margin:auto;color:var(--sbiadito);text-align:center}
+.vuoto b{display:block;color:var(--testo);font-size:16px;margin-bottom:6px}
+#bar{display:flex;gap:10px;padding:14px 22px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--bordo);background:rgba(5,7,13,.6);backdrop-filter:blur(12px)}
+#txt{flex:1;min-width:0;background:rgba(0,0,0,.4);border:1px solid var(--bordo);border-radius:12px;padding:12px 16px;outline:none;transition:border-color .2s,box-shadow .2s}
+#txt:focus{border-color:var(--ciano);box-shadow:0 0 16px rgba(0,229,255,.2)}
+#send{background:var(--ciano);color:#001018;border:0;border-radius:12px;padding:0 20px;font-weight:800;box-shadow:0 0 18px rgba(0,229,255,.35)}
+
+@keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+@media (max-width:760px){
+  #side{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-105%);transition:transform .3s;width:min(300px,86vw);padding-top:calc(20px + env(safe-area-inset-top,0px));box-shadow:8px 0 40px rgba(0,0,0,.6)}
+  #side.open{transform:none}
+  #menu{display:block}
+  #videoGrid{grid-template-columns:repeat(2,1fr);max-height:300px}
+}
+
+@media (min-width:761px){
+  #videoGrid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));max-height:500px}
+}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
 
-<!-- LOGIN MODAL -->
-<div id="loginModal">
-  <div class="loginBox">
+<div id="join">
+  <form id="jf">
     <h1>NEXUS</h1>
-    <input type="text" id="loginName" placeholder="Nome utente" autofocus>
-    <input type="password" id="loginPass" placeholder="Password">
-    <button onclick="login()">Entra</button>
-    <div id="loginError"></div>
-  </div>
+    <p class="intro">Chat e voce per il tuo gruppo. Scegli un nome e collegati.</p>
+    <input id="name" placeholder="Il tuo nome" maxlength="24" autocomplete="nickname" required>
+    <input id="pass" type="password" placeholder="Password" autocomplete="off">
+    <p id="err" role="alert"></p>
+    <button class="bottone" type="submit">Collegati</button>
+  </form>
 </div>
 
-<!-- MAIN APP -->
-<div id="app" class="hidden">
-  <!-- SIDEBAR -->
-  <div id="side">
-    <div class="sideHeader">Canali</div>
-    <div class="channels" id="channels"></div>
-    
-    <div class="users">
-      <div style="font-weight: 600; color: var(--ciano); font-size: 11px; margin-bottom: 8px; text-transform: uppercase;">Online</div>
-      <div id="userList"></div>
-    </div>
+<div id="app">
+  <aside id="side">
+    <div class="logo">NEXUS</div>
 
-    <div class="sideFooter">
-      <div id="myName" style="font-weight: 600; color: var(--ciano); margin-bottom: 5px;"></div>
-      <button onclick="logout()" style="background: var(--rosso);">Esci</button>
-    </div>
-  </div>
+    <section>
+      <p class="mono">Canali</p>
+      <div id="chs" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+    </section>
 
-  <!-- MAIN CONTENT -->
-  <div id="main">
-    <!-- TOP BAR -->
-    <div id="top">
-      <div id="chName"># generale</div>
-      <div class="topRa">
-        <button class="topBtn" id="vjoin">🎙️ Voce</button>
-        <button class="topBtn" id="vcam" hidden>📹 Camera</button>
-        <button class="topBtn" id="vmute" hidden>🔇 Muta</button>
-        <button class="topBtn" id="settingBtn" hidden>⚙️ Impostazioni</button>
+    <section>
+      <p class="mono">Voce</p>
+      <div id="vox" style="margin-top:8px">
+        <div id="videoGrid"></div>
+        <p id="vmsg">Nessuno in voce.</p>
+        <div class="riga">
+          <button class="bottone" id="vjoin">Connetti</button>
+          <button class="bottone secondario" id="vcam" hidden>📹</button>
+          <button class="bottone secondario" id="vmute" hidden>🎙️</button>
+          <button class="bottone secondario" id="settingBtn" hidden>⚙️</button>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- MESSAGES -->
+    <section>
+      <p class="mono" id="uh">Online</p>
+      <div id="users" style="margin-top:8px"></div>
+    </section>
+  </aside>
+
+  <main id="main">
+    <header id="top">
+      <button id="menu" aria-label="Apri il menu">☰</button>
+      <div>
+        <h1 id="title"></h1>
+        <div class="mono">Canale attivo</div>
+      </div>
+      <span id="conn"></span>
+    </header>
     <div id="msgs"></div>
-
-    <!-- INPUT -->
-    <div id="input">
-      <input type="text" id="msgInput" placeholder="Scrivi un messaggio...">
+    <div id="bar">
+      <input id="txt" placeholder="Scrivi un messaggio..." maxlength="1000" autocomplete="off">
       <button id="send">Invia</button>
     </div>
+  </main>
+</div>
 
-    <!-- VOICE/VIDEO -->
-    <div id="voiceSection">
-      <div id="vids"></div>
+<div id="impostazioni">
+  <button class="chiudiSetting" id="chiudiSetting">✕</button>
+  <div class="box">
+    <h2>Impostazioni Audio/Video</h2>
+    
+    <div class="settingGroup">
+      <label>📊 Diagnostica Microfono</label>
+      <div class="diagnostica" id="diagMic">Controllo in corso...</div>
     </div>
+
+    <div class="settingGroup">
+      <label>📊 Diagnostica Camera</label>
+      <div class="diagnostica" id="diagCam">Controllo in corso...</div>
+    </div>
+
+    <div class="settingGroup">
+      <label>🎙️ Microfono</label>
+      <select id="audioInput">
+        <option>Caricamento dispositivi...</option>
+      </select>
+      <button class="testBtn" id="testMic">🔊 Test Microfono</button>
+    </div>
+
+    <div class="settingGroup">
+      <label>🔊 Speaker</label>
+      <select id="audioOutput">
+        <option>Caricamento dispositivi...</option>
+      </select>
+      <button class="testBtn" id="testSpeaker">▶️ Test Speaker</button>
+    </div>
+
+    <div class="settingGroup">
+      <label>📹 Camera</label>
+      <select id="videoInput">
+        <option>Caricamento dispositivi...</option>
+      </select>
+      <button class="testBtn" id="testCam">📷 Test Camera</button>
+      <video id="testVideo" style="width:100%;border-radius:8px;margin-top:8px;background:#000;display:none"></video>
+    </div>
+
+    <button class="bottone" id="salvaImpostazioni" style="width:100%;margin-top:16px">Salva e Torna</button>
   </div>
 </div>
 
 <script>
-  // CONFIG
-  const API = location.protocol === "https:" ? "wss://" : "ws://";
-  const WS_URL = API + location.host;
+const $ = (s) => document.querySelector(s);
+const ICE = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }];
+const TONI = ["#00e5ff","#b400ff","#00ffa3","#ff3d7f","#ffd166","#4d9cff","#c3ff3d","#ff7a4d"];
 
-  // STATE
-  let me = { id: null, name: null, admin: false };
-  let channel = "generale";
-  let inVoice = false;
-  let inVoiceCall = false;
-  let mutedMic = false;
-  let mutedCam = false;
-  let peers = {};
-  let localStream = null;
-  let ws = null;
+let ws, me = null, channels = [], history = {}, cur = "generale", users = [];
+let creds = null, inVoice = false, localStream = null, mutedMic = false, mutedCam = false;
+const pcs = {}, audios = {}, videoBoxes = {};
 
-  // === LOGIN ===
-  function login() {
-    const name = document.getElementById("loginName").value.trim();
-    const pass = document.getElementById("loginPass").value;
+/* ---------- utilità ---------- */
+function tono(nome) {
+  let h = 0;
+  for (const c of nome) h = (h * 31 + c.charCodeAt(0)) % TONI.length;
+  return TONI[h];
+}
+function avatar(nome) {
+  const d = document.createElement("div");
+  d.className = "avatar";
+  d.style.background = tono(nome);
+  d.textContent = (nome[0] || "?").toUpperCase();
+  return d;
+}
+const send = (o) => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
 
-    if (!name || !pass) {
-      showError("Nome e password obbligatori");
+/* ---------- connessione ---------- */
+function connect() {
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+  ws.onopen = () => { $("#conn").textContent = ""; send({ t: "join", name: creds.name, pass: creds.pass }); };
+  ws.onmessage = (e) => handle(JSON.parse(e.data));
+  ws.onclose = () => {
+    leaveVoice(false);
+    if (!me) return;
+    $("#conn").textContent = "Connessione persa, riprovo…";
+    setTimeout(connect, 2000);
+  };
+}
+
+function handle(m) {
+  if (m.t === "denied") {
+    $("#err").textContent = "Credenziale errate";
+    creds = null; ws.onclose = null; ws.close();
+  } else if (m.t === "welcome") {
+    me = { id: m.id, name: m.name, admin: m.admin };
+    channels = m.channels; history = m.history;
+    if (!channels.includes(cur)) cur = channels[0];
+    $("#join").style.display = "none";
+    $("#app").classList.add("on");
+    renderChannels(); renderMsgs();
+  } else if (m.t === "users") {
+    users = m.users;
+    renderUsers();
+    for (const id of Object.keys(pcs)) {
+      const u = users.find((x) => x.id === id);
+      if (!u || !u.voice) closePeer(id);
+    }
+  } else if (m.t === "msg") {
+    history[m.ch].push(m.m);
+    if (m.ch === cur) renderMsgs();
+  } else if (m.t === "voice-peers") {
+    m.peers.forEach((id) => makePeer(id, true));
+  } else if (m.t === "del") {
+    history[m.ch] = history[m.ch].filter((x) => !(x.ts === m.ts && x.uid === m.uid));
+    if (m.ch === cur) renderMsgs();
+  } else if (m.t === "sys") {
+    addSys(m.text);
+  } else if (m.t === "kicked") {
+    ws.onclose = null;
+    alert("Sei stato kickato da " + m.by + ".");
+    location.reload();
+  } else if (m.t === "mute") {
+    forcedMute = m.on; applyForced();
+    if (m.on) addSys("🔇 Sei stato mutato da un admin");
+  } else if (m.t === "cam") {
+    forcedCam = !m.on; applyForced();
+  } else if (m.t === "signal") {
+    onSignal(m.from, m.data);
+  }
+}
+
+/* ---------- interfaccia ---------- */
+function renderChannels() {
+  const box = $("#chs");
+  box.innerHTML = "";
+  channels.forEach((c) => {
+    const b = document.createElement("button");
+    b.className = "portale" + (c === cur ? " on" : "");
+    b.textContent = c;
+    b.onclick = () => { cur = c; renderChannels(); renderMsgs(); $("#side").classList.remove("open"); };
+    box.appendChild(b);
+  });
+  $("#title").textContent = "# " + cur;
+}
+
+function adminBtn(txt, title, fn) {
+  const b = document.createElement("button");
+  b.textContent = txt; b.title = title; b.onclick = fn;
+  b.style.cssText = "margin-left:4px;padding:0 5px;font-size:12px;cursor:pointer;background:transparent;border:1px solid rgba(255,255,255,.25);border-radius:6px;color:inherit";
+  return b;
+}
+
+function renderUsers() {
+  const box = $("#users");
+  box.innerHTML = "";
+  users.forEach((u) => {
+    const r = document.createElement("div");
+    r.className = "persona";
+    const n = document.createElement("span");
+    n.className = "nome";
+    n.textContent = (u.admin ? "👑 " : "") + u.name + (u.id === me.id ? " (tu)" : "");
+    r.append(avatar(u.name), n);
+    if (u.voice) {
+      const t = document.createElement("span");
+      t.className = "chip";
+      t.textContent = "voce";
+      r.appendChild(t);
+    }
+    if (me.admin && u.id !== me.id) {
+      r.append(
+        adminBtn(u.muted ? "🔊" : "🔇", u.muted ? "Smuta" : "Muta", () => send({ t: "mute", id: u.id, on: !u.muted })),
+        adminBtn(u.camOff ? "📹" : "📵", u.camOff ? "Ridai camera" : "Togli camera", () => send({ t: "cam", id: u.id, on: !!u.camOff })),
+        adminBtn("⛔", "Kicka", () => { if (confirm("Kicka " + u.name + "?")) send({ t: "kick", id: u.id }); })
+      );
+    }
+    box.appendChild(r);
+  });
+  $("#uh").textContent = "Online · " + users.length;
+  const inCall = users.filter((u) => u.voice).map((u) => u.name);
+  $("#vmsg").textContent = inCall.length ? "In voce: " + inCall.join(", ") : "Nessuno in voce.";
+}
+
+function renderMsgs() {
+  const box = $("#msgs");
+  const list = history[cur] || [];
+  box.innerHTML = "";
+  if (!list.length) {
+    const e = document.createElement("div");
+    e.className = "vuoto";
+    e.innerHTML = "<b>Nessun messaggio ancora</b>Scrivi il primo per iniziare.";
+    box.appendChild(e);
+    return;
+  }
+  list.forEach((m) => {
+    const mio = me && m.uid === me.id;
+    const row = document.createElement("div");
+    row.className = "msg" + (mio ? " mio" : "");
+    const col = document.createElement("div");
+    col.style.minWidth = "0";
+    const testa = document.createElement("div");
+    testa.className = "testa";
+    const b = document.createElement("b");
+    b.textContent = mio ? "Tu" : m.user;
+    const ora = document.createElement("span");
+    ora.textContent = new Date(m.ts).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+    testa.append(b, ora);
+    if (me && (mio || me.admin)) {
+      const del = document.createElement("button");
+      del.textContent = "🗑️"; del.title = "Cancella messaggio";
+      del.style.cssText = "margin-left:6px;padding:0 5px;font-size:12px;cursor:pointer;background:transparent;border:none;color:inherit";
+      del.onclick = () => { if (confirm("Cancellare il messaggio?")) send({ t: "del", ch: cur, ts: m.ts, uid: m.uid }); };
+      testa.append(del);
+    }
+    const corpo = document.createElement("div");
+    corpo.className = "corpo";
+    corpo.textContent = m.text;
+    col.append(testa, corpo);
+    row.append(avatar(mio ? me.name : m.user), col);
+    box.appendChild(row);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendMsg() {
+  const v = $("#txt").value.trim();
+  if (!v) return;
+  send({ t: "msg", ch: cur, text: v });
+  $("#txt").value = "";
+}
+
+/* ---------- voce + video (WebRTC) ---------- */
+const audioCtx = () => { if (!window._ac) window._ac = new (window.AudioContext || window.webkitAudioContext)(); return window._ac; };
+
+async function joinVoice() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { echoCancellation: true, noiseSuppression: true }
+    });
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      videoStream.getTracks().forEach((t) => localStream.addTrack(t));
+    } catch (e) {
+      console.log("Camera non disponibile, solo audio");
+      $("#vmsg").textContent = "Camera non disponibile. Usi solo audio.";
+    }
+  } catch (e) {
+    $("#vmsg").textContent = "Microfono non disponibile. Controlla i permessi (serve HTTPS).";
+    console.error("Audio error:", e);
+    return;
+  }
+  
+  try { audioCtx().resume(); } catch (e) {}
+  inVoice = true; mutedMic = false; mutedCam = false;
+  
+  addLocalVideo();
+  
+  $("#vjoin").textContent = "Disconnetti";
+  $("#vjoin").classList.add("rosso");
+  $("#vcam").hidden = localStream.getVideoTracks().length === 0;
+  $("#vcam").textContent = "📹";
+  $("#vmute").hidden = false;
+  $("#vmute").textContent = "🎙️";
+  $("#settingBtn").hidden = false;
+  applyForced();
+  send({ t: "voice-join" });
+}
+
+function leaveVoice(notify = true) {
+  if (!inVoice) return;
+  
+  try {
+    Object.keys(pcs).forEach((id) => {
+      try {
+        if (pcs[id]) pcs[id].close();
+        delete pcs[id];
+      } catch (e) { }
+    });
+  } catch (e) { }
+
+  try {
+    if (localStream) {
+      localStream.getTracks().forEach((t) => {
+        try { t.stop(); } catch (e) { }
+      });
+    }
+  } catch (e) { }
+  
+  localStream = null;
+  inVoice = false;
+  
+  document.getElementById("videoGrid").innerHTML = "";
+  
+  $("#vjoin").textContent = "Connetti";
+  $("#vjoin").classList.remove("rosso");
+  $("#vcam").hidden = true;
+  $("#vmute").hidden = true;
+  $("#settingBtn").hidden = true;
+  
+  if (notify) {
+    try { send({ t: "voice-leave" }); } catch (e) { }
+  }
+}
+
+function addLocalVideo() {
+  const grid = document.getElementById("videoGrid");
+  grid.innerHTML = "";
+  const hasVideo = localStream && localStream.getVideoTracks().length > 0;
+  
+  if (hasVideo) {
+    const box = document.createElement("div");
+    box.className = "videoBox locale";
+    box.id = "video-local";
+    const video = document.createElement("video");
+    video.srcObject = localStream;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true;
+    const label = document.createElement("div");
+    label.className = "videoNome";
+    label.textContent = me.name + " (tu)";
+    box.appendChild(video);
+    box.appendChild(label);
+    grid.appendChild(box);
+  }
+}
+
+function addRemoteVideo(id, name) {
+  const grid = document.getElementById("videoGrid");
+  const box = document.createElement("div");
+  box.className = "videoBox";
+  box.id = "video-" + id;
+  const video = document.createElement("video");
+  video.autoplay = true;
+  video.playsInline = true;
+  const label = document.createElement("div");
+  label.className = "videoNome";
+  label.textContent = name;
+  box.appendChild(video);
+  box.appendChild(label);
+  grid.appendChild(box);
+  videoBoxes[id] = { box, video };
+}
+
+function removeRemoteVideo(id) {
+  const el = document.getElementById("video-" + id);
+  if (el) el.remove();
+  delete videoBoxes[id];
+}
+
+function makePeer(id, initiator) {
+  if (pcs[id]) return pcs[id];
+  const pc = new RTCPeerConnection({ iceServers: ICE });
+  pcs[id] = pc;
+  
+  localStream.getTracks().forEach((t) => {
+    if (t.kind === "audio" && !mutedMic) pc.addTrack(t, localStream);
+    if (t.kind === "video" && !mutedCam) pc.addTrack(t, localStream);
+  });
+  
+  pc.onicecandidate = (e) => e.candidate && send({ t: "signal", to: id, data: { ice: e.candidate } });
+  pc.ontrack = (e) => {
+    console.log("Video ricevuto da", id);
+    if (!videoBoxes[id]) {
+      addRemoteVideo(id, users.find(u => u.id === id)?.name || "Sconosciuto");
+    }
+    const vb = videoBoxes[id];
+    if (vb) {
+      vb.video.srcObject = e.streams[0];
+      vb.video.play().catch(() => {});
+    }
+  };
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === "failed") closePeer(id);
+  };
+  
+  if (initiator) {
+    pc.createOffer()
+      .then((o) => pc.setLocalDescription(o))
+      .then(() => send({ t: "signal", to: id, data: { sdp: pc.localDescription } }))
+      .catch((e) => console.error("Offer error:", e));
+  }
+  return pc;
+}
+
+async function onSignal(from, data) {
+  if (!inVoice) return;
+  try {
+    const pc = pcs[from] || makePeer(from, false);
+    if (data.sdp) {
+      await pc.setRemoteDescription(data.sdp);
+      if (data.sdp.type === "offer") {
+        await pc.setLocalDescription(await pc.createAnswer());
+        send({ t: "signal", to: from, data: { sdp: pc.localDescription } });
+      }
+    } else if (data.ice) {
+      await pc.addIceCandidate(data.ice);
+    }
+  } catch (e) {
+    console.log("errore segnale voce", e);
+  }
+}
+
+function closePeer(id) {
+  if (pcs[id]) { 
+    pcs[id].close(); 
+    delete pcs[id]; 
+  }
+  removeRemoteVideo(id);
+}
+
+/* ---------- controlli microfono e camera ---------- */
+$("#vcam").addEventListener("click", async () => {
+  if (!localStream) return;
+  
+  if (mutedCam && localStream.getVideoTracks().length === 0) {
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      videoStream.getTracks().forEach((t) => {
+        localStream.addTrack(t);
+        Object.values(pcs).forEach((pc) => {
+          pc.addTrack(t, localStream);
+        });
+      });
+      mutedCam = false;
+      addLocalVideo();
+      $("#vcam").textContent = "📹";
+    } catch (e) {
+      console.error("Camera error:", e);
+      $("#vmsg").textContent = "Impossibile accendere la camera.";
       return;
     }
-
-    connect(name, pass);
+  } else {
+    mutedCam = !mutedCam;
+    localStream.getVideoTracks().forEach((t) => (t.enabled = !mutedCam));
+    $("#vcam").textContent = mutedCam ? "🚫" : "📹";
+    const localBox = document.getElementById("video-local");
+    if (localBox) localBox.classList.toggle("muto", mutedCam);
   }
+});
 
-  function showError(msg) {
-    const err = document.getElementById("loginError");
-    err.textContent = msg;
-    setTimeout(() => { err.textContent = ""; }, 4000);
-  }
+$("#vmute").addEventListener("click", () => {
+  if (!localStream) return;
+  mutedMic = !mutedMic;
+  localStream.getAudioTracks().forEach((t) => (t.enabled = !mutedMic));
+  $("#vmute").textContent = mutedMic ? "🔇" : "🎙️";
+});
 
-  // === WEBSOCKET ===
-  function connect(name, pass) {
-    ws = new WebSocket(WS_URL);
+/* ---------- impostazioni dispositivi ---------- */
+let devices = { audio: [], video: [], output: [] };
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({
-        type: "join",
-        name,
-        password: pass,
-        channel
-      }));
-    };
-
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      handle(msg);
-    };
-
-    ws.onerror = () => {
-      showError("Errore connessione");
-    };
-
-    ws.onclose = () => {
-      showError("Disconnesso");
-      document.getElementById("app").classList.add("hidden");
-      document.getElementById("loginModal").classList.remove("hidden");
-    };
-  }
-
-  function handle(msg) {
-    switch (msg.type) {
-      case "welcome":
-        handleWelcome(msg);
-        break;
-      case "denied":
-        showError(msg.reason);
-        break;
-      case "msg":
-        addMsg(msg);
-        break;
-      case "msgDeleted":
-        deleteMsg(msg.msgId);
-        break;
-      case "sysMsg":
-        addSysMsg(msg.text);
-        break;
-      case "userJoined":
-        addUser(msg);
-        break;
-      case "userLeft":
-        removeUser(msg.id);
-        break;
-      case "kicked":
-        showError("Sei stato kickato!");
-        ws.close();
-        break;
-      case "muted":
-        mutedMic = true;
-        updateVoiceButtons();
-        showError("Sei stato mutato!");
-        break;
-      case "unmuted":
-        mutedMic = false;
-        updateVoiceButtons();
-        break;
-      case "camDisabled":
-        mutedCam = true;
-        updateVoiceButtons();
-        showError("La tua camera è stata disabilitata!");
-        break;
-      case "voice-peers":
-        handleVoicePeers(msg.peers);
-        break;
-      case "newVoicePeer":
-        createPeer(msg.id, msg.name, true);
-        break;
-      case "signal":
-        handleSignal(msg);
-        break;
-    }
-  }
-
-  function handleWelcome(msg) {
-    me.id = msg.id;
-    me.admin = msg.admin;
-
-    document.getElementById("loginModal").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-
-    document.getElementById("myName").textContent = (msg.admin ? "👑 " : "") + me.name;
-
-    msg.channels.forEach(ch => {
-      const el = document.createElement("div");
-      el.className = "channel" + (ch === channel ? " active" : "");
-      el.textContent = "#" + ch;
-      el.onclick = () => switchChannel(ch);
-      document.getElementById("channels").appendChild(el);
+async function loadDevices() {
+  try {
+    const all = await navigator.mediaDevices.enumerateDevices();
+    devices = { audio: [], video: [], output: [] };
+    all.forEach((d) => {
+      if (d.kind === "audioinput") devices.audio.push(d);
+      else if (d.kind === "videoinput") devices.video.push(d);
+      else if (d.kind === "audiooutput") devices.output.push(d);
     });
-
-    updateUsers(msg.users);
-    msg.messages.forEach(m => addMsg(m));
-    autoScroll();
+    updateDeviceSelects();
+    diagnosticCheck();
+  } catch (e) {
+    console.error("Errore nel caricamento dispositivi:", e);
   }
+}
 
-  // === CHAT ===
-  function addMsg(m) {
-    const el = document.createElement("div");
-    el.className = "msg";
-    if (m.from === me.id) el.classList.add("own");
-    if (m.admin) el.classList.add("admin");
-
-    const header = document.createElement("div");
-    header.className = "msgHeader";
-    header.innerHTML = `
-      <span class="msgName${m.admin ? " admin" : ""}">${m.admin ? "👑 " : ""}${m.name}</span>
-      <span class="msgTime">${new Date(m.time).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</span>
-    `;
-
-    const text = document.createElement("div");
-    text.className = "msgText";
-    text.textContent = m.text;
-
-    const actions = document.createElement("div");
-    actions.className = "msgActions";
-
-    // Pulsante cancella
-    if (m.from === me.id || me.admin) {
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "🗑️ Cancella";
-      delBtn.onclick = () => {
-        ws.send(JSON.stringify({
-          type: "deleteMsg",
-          msgId: m.id,
-          channel
-        }));
-      };
-      actions.appendChild(delBtn);
-    }
-
-    el.appendChild(header);
-    el.appendChild(text);
-    if (actions.children.length > 0) el.appendChild(actions);
-
-    el.id = "msg-" + m.id;
-    document.getElementById("msgs").appendChild(el);
-    autoScroll();
-  }
-
-  function deleteMsg(msgId) {
-    const el = document.getElementById("msg-" + msgId);
-    if (el) el.remove();
-  }
-
-  function addSysMsg(text) {
-    const el = document.createElement("div");
-    el.className = "sysMsg";
-    el.textContent = text;
-    document.getElementById("msgs").appendChild(el);
-    autoScroll();
-  }
-
-  document.getElementById("send").onclick = () => {
-    const input = document.getElementById("msgInput");
-    const text = input.value.trim();
-    if (!text) return;
-
-    ws.send(JSON.stringify({
-      type: "msg",
-      text,
-      channel
-    }));
-
-    input.value = "";
-  };
-
-  document.getElementById("msgInput").onkeypress = (e) => {
-    if (e.key === "Enter") document.getElementById("send").click();
-  };
-
-  // === CHANNELS ===
-  function switchChannel(ch) {
-    channel = ch;
-    document.querySelectorAll(".channel").forEach(c => c.classList.remove("active"));
-    event.target.classList.add("active");
-    document.getElementById("chName").textContent = "#" + ch;
-    document.getElementById("msgs").innerHTML = "";
-  }
-
-  // === USERS ===
-  function addUser(u) {
-    updateUsers([u]);
-  }
-
-  function removeUser(id) {
-    const el = document.getElementById("user-" + id);
-    if (el) el.remove();
-  }
-
-  function updateUsers(users) {
-    const list = document.getElementById("userList");
-    list.innerHTML = "";
-    users.forEach(u => {
-      const el = document.createElement("div");
-      el.className = "userItem";
-      el.id = "user-" + u.id;
-      el.innerHTML = `
-        <span class="${u.admin ? "userAdmin" : ""}">${u.admin ? "👑 " : ""}${u.name}</span>
-      `;
-
-      // Pulsanti admin
-      if (me.admin) {
-        const actions = document.createElement("div");
-        actions.className = "userActions";
-
-        const kickBtn = document.createElement("button");
-        kickBtn.textContent = "⛔";
-        kickBtn.title = "Kicka";
-        kickBtn.onclick = () => {
-          ws.send(JSON.stringify({
-            type: "kick",
-            targetId: u.id
-          }));
-        };
-
-        const muteBtn = document.createElement("button");
-        muteBtn.textContent = "🔇";
-        muteBtn.title = "Muta";
-        muteBtn.onclick = () => {
-          ws.send(JSON.stringify({
-            type: "mute",
-            targetId: u.id
-          }));
-        };
-
-        const camBtn = document.createElement("button");
-        camBtn.textContent = "📵";
-        camBtn.title = "Camera off";
-        camBtn.onclick = () => {
-          ws.send(JSON.stringify({
-            type: "toggleCam",
-            targetId: u.id
-          }));
-        };
-
-        actions.appendChild(kickBtn);
-        actions.appendChild(muteBtn);
-        actions.appendChild(camBtn);
-        el.appendChild(actions);
-      }
-
-      list.appendChild(el);
+function updateDeviceSelects() {
+  const audioSelect = document.getElementById("audioInput");
+  audioSelect.innerHTML = "";
+  if (devices.audio.length > 0) {
+    devices.audio.forEach((d) => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.textContent = d.label || "Microfono " + d.deviceId.slice(0, 5);
+      audioSelect.appendChild(opt);
     });
+  } else {
+    audioSelect.innerHTML = "<option>Nessun microfono trovato</option>";
   }
 
-  // === VOICE ===
-  document.getElementById("vjoin").onclick = async () => {
-    if (inVoice) {
-      leaveVoice();
+  const outputSelect = document.getElementById("audioOutput");
+  outputSelect.innerHTML = "";
+  if (devices.output.length > 0) {
+    devices.output.forEach((d) => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.textContent = d.label || "Speaker " + d.deviceId.slice(0, 5);
+      outputSelect.appendChild(opt);
+    });
+  } else {
+    outputSelect.innerHTML = "<option>Nessuno speaker trovato</option>";
+  }
+
+  const videoSelect = document.getElementById("videoInput");
+  videoSelect.innerHTML = "";
+  if (devices.video.length > 0) {
+    devices.video.forEach((d) => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.textContent = d.label || "Camera " + d.deviceId.slice(0, 5);
+      videoSelect.appendChild(opt);
+    });
+  } else {
+    videoSelect.innerHTML = "<option>Nessuna camera trovata</option>";
+  }
+}
+
+async function diagnosticCheck() {
+  const diagMic = document.getElementById("diagMic");
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const tracks = stream.getAudioTracks();
+    if (tracks.length > 0) {
+      diagMic.textContent = "✓ Microfono OK: " + (tracks[0].label || "Generico");
+      diagMic.className = "diagnostica ok";
+      tracks.forEach(t => t.stop());
     } else {
-      await joinVoice();
+      diagMic.textContent = "✗ Nessuna traccia audio trovata";
+      diagMic.className = "diagnostica errore";
     }
-  };
-
-  async function joinVoice() {
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      inVoice = true;
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        localStream.getTracks().forEach(t => {
-          if (t.kind === "video") localStream.addTrack(t);
-        });
-      } catch (e) {
-        console.log("Camera non disponibile");
-      }
-
-      ws.send(JSON.stringify({ type: "voice-join" }));
-      updateVoiceButtons();
-    } catch (e) {
-      showError("Microfono non disponibile: " + e.message);
-    }
+  } catch (e) {
+    diagMic.textContent = "✗ Errore: " + e.message;
+    diagMic.className = "diagnostica errore";
   }
 
-  function leaveVoice() {
-    inVoice = false;
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-      localStream = null;
-    }
-    Object.keys(peers).forEach(id => {
-      if (peers[id].pc) peers[id].pc.close();
-    });
-    peers = {};
-    document.getElementById("vids").innerHTML = "";
-    ws.send(JSON.stringify({ type: "voice-leave" }));
-    updateVoiceButtons();
-  }
-
-  function updateVoiceButtons() {
-    const vjoin = document.getElementById("vjoin");
-    const vcam = document.getElementById("vcam");
-    const vmute = document.getElementById("vmute");
-
-    if (inVoice) {
-      vjoin.classList.add("attivo");
-      vjoin.textContent = "🎙️ Esci";
-      vcam.classList.remove("hidden");
-      vmute.classList.remove("hidden");
+  const diagCam = document.getElementById("diagCam");
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const tracks = stream.getVideoTracks();
+    if (tracks.length > 0) {
+      diagCam.textContent = "✓ Camera OK: " + (tracks[0].label || "Generica");
+      diagCam.className = "diagnostica ok";
+      tracks.forEach(t => t.stop());
     } else {
-      vjoin.classList.remove("attivo");
-      vjoin.textContent = "🎙️ Voce";
-      vcam.classList.add("hidden");
-      vmute.classList.add("hidden");
-      document.getElementById("vids").innerHTML = "";
+      diagCam.textContent = "✗ Nessuna traccia video trovata";
+      diagCam.className = "diagnostica errore";
     }
+  } catch (e) {
+    diagCam.textContent = "✗ Errore: " + e.message;
+    diagCam.className = "diagnostica errore";
   }
+}
 
-  // === WebRTC ===
-  function handleVoicePeers(peers) {
-    peers.forEach(p => {
-      if (p.id !== me.id) createPeer(p.id, p.name, true);
+$("#settingBtn").addEventListener("click", () => {
+  document.getElementById("impostazioni").classList.add("on");
+  loadDevices();
+});
+
+document.getElementById("chiudiSetting").addEventListener("click", () => {
+  document.getElementById("impostazioni").classList.remove("on");
+});
+
+document.getElementById("salvaImpostazioni").addEventListener("click", () => {
+  const audioId = document.getElementById("audioInput").value;
+  const outputId = document.getElementById("audioOutput").value;
+  const videoId = document.getElementById("videoInput").value;
+  localStorage.setItem("nexus-audio", audioId);
+  localStorage.setItem("nexus-output", outputId);
+  localStorage.setItem("nexus-video", videoId);
+  document.getElementById("impostazioni").classList.remove("on");
+});
+
+document.getElementById("testMic").addEventListener("click", async () => {
+  try {
+    const audioId = document.getElementById("audioInput").value;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { deviceId: audioId ? { exact: audioId } : undefined }
     });
+    const osc = audioCtx().createOscillator();
+    const gain = audioCtx().createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx().destination);
+    gain.gain.setValueAtTime(0.2, audioCtx().currentTime);
+    osc.start();
+    setTimeout(() => osc.stop(), 500);
+    stream.getTracks().forEach(t => t.stop());
+    alert("Test completato: dovresti aver sentito un beep dal tuo speaker");
+  } catch (e) {
+    alert("Errore nel test microfono: " + e.message);
   }
+});
 
-  function createPeer(id, name, initiator) {
-    if (peers[id]) return;
+document.getElementById("testSpeaker").addEventListener("click", async () => {
+  try {
+    const osc = audioCtx().createOscillator();
+    const gain = audioCtx().createGain();
+    osc.frequency.value = 1000;
+    osc.connect(gain);
+    gain.connect(audioCtx().destination);
+    gain.gain.setValueAtTime(0.2, audioCtx().currentTime);
+    osc.start();
+    setTimeout(() => osc.stop(), 500);
+    alert("Dovresti sentire un beep di 500ms");
+  } catch (e) {
+    alert("Errore nel test speaker: " + e.message);
+  }
+});
 
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" }
-      ]
+document.getElementById("testCam").addEventListener("click", async () => {
+  try {
+    const videoId = document.getElementById("videoInput").value;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: videoId ? { exact: videoId } : undefined }
     });
-
-    peers[id] = { id, name, pc };
-
-    if (localStream) {
-      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-    }
-
-    pc.ontrack = (e) => {
-      addRemoteVideo(id, name, e.streams[0]);
-    };
-
-    pc.onicecandidate = (e) => {
-      if (e.candidate) {
-        ws.send(JSON.stringify({
-          type: "signal",
-          to: id,
-          data: { type: "candidate", candidate: e.candidate }
-        }));
-      }
-    };
-
-    if (initiator) {
-      pc.createOffer().then(offer => {
-        pc.setLocalDescription(offer);
-        ws.send(JSON.stringify({
-          type: "signal",
-          to: id,
-          data: { type: "offer", offer }
-        }));
-      });
-    }
-
-    return pc;
-  }
-
-  function handleSignal(msg) {
-    const { from, data } = msg;
-    let pc = peers[from]?.pc;
-
-    if (!pc) {
-      pc = createPeer(from, peers[from]?.name || from, false);
-    }
-
-    if (data.type === "offer") {
-      pc.setRemoteDescription(new RTCSessionDescription(data.offer)).then(() => {
-        pc.createAnswer().then(answer => {
-          pc.setLocalDescription(answer);
-          ws.send(JSON.stringify({
-            type: "signal",
-            to: from,
-            data: { type: "answer", answer }
-          }));
-        });
-      });
-    } else if (data.type === "answer") {
-      pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-    } else if (data.type === "candidate") {
-      pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    }
-  }
-
-  function addRemoteVideo(id, name, stream) {
-    const vids = document.getElementById("vids");
-    let video = document.getElementById("video-" + id);
-    if (!video) {
-      video = document.createElement("video");
-      video.id = "video-" + id;
-      video.className = "remote";
-      video.autoplay = true;
-      video.playsinline = true;
-      video.muted = false;
-      vids.appendChild(video);
-    }
+    const video = document.getElementById("testVideo");
     video.srcObject = stream;
+    video.style.display = "block";
+    video.play();
+    setTimeout(() => {
+      stream.getTracks().forEach(t => t.stop());
+      video.style.display = "none";
+    }, 3000);
+  } catch (e) {
+    alert("Errore nel test camera: " + e.message);
   }
+});
 
-  function autoScroll() {
-    const msgs = document.getElementById("msgs");
-    msgs.scrollTop = msgs.scrollHeight;
+/* ---------- admin: mute / camera forzati ---------- */
+let forcedMute = false, forcedCam = false;
+function addSys(text) {
+  const box = $("#msgs");
+  const e = document.createElement("div");
+  e.className = "vuoto";
+  e.style.padding = "6px";
+  e.textContent = text;
+  box.appendChild(e);
+  box.scrollTop = box.scrollHeight;
+}
+function applyForced() {
+  if (!localStream) return;
+  localStream.getAudioTracks().forEach((t) => (t.enabled = !forcedMute));
+  localStream.getVideoTracks().forEach((t) => (t.enabled = !forcedCam));
+  if (forcedMute) { mutedMic = true; $("#vmute").textContent = "🔇"; }
+  if (forcedCam) { mutedCam = true; $("#vcam").textContent = "🚫"; }
+}
+// blocca i pulsanti mic/cam mentre l'admin li ha forzati
+document.addEventListener("click", (e) => {
+  if ((forcedMute && e.target.closest("#vmute")) || (forcedCam && e.target.closest("#vcam"))) {
+    e.stopPropagation(); e.preventDefault();
   }
+}, true);
 
-  function logout() {
-    if (confirm("Esci davvero?")) {
-      leaveVoice();
-      if (ws) ws.close();
-      location.reload();
-    }
-  }
-
-  // INIT
-  document.getElementById("loginName").focus();
+/* ---------- eventi ---------- */
+$("#jf").addEventListener("submit", (e) => {
+  e.preventDefault();
+  $("#err").textContent = "";
+  creds = { name: $("#name").value.trim(), pass: $("#pass").value };
+  try { localStorage.setItem("nexus-nome", creds.name); } catch (e) {}
+  connect();
+});
+$("#send").onclick = sendMsg;
+$("#txt").addEventListener("keydown", (e) => { if (e.key === "Enter") sendMsg(); });
+$("#menu").onclick = () => $("#side").classList.toggle("open");
+$("#vjoin").onclick = () => (inVoice ? leaveVoice() : joinVoice());
+try { $("#name").value = localStorage.getItem("nexus-nome") || ""; } catch (e) {}
 </script>
-
 </body>
 </html>
