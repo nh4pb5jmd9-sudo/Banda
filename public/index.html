@@ -519,6 +519,15 @@ function addRemoteVideo(id, name) {
   videoBoxes[id] = { box, video };
 }
 
+function playRemote(vb) {
+  const p = vb.video.play();
+  if (p && p.catch) p.catch(() => { vb.box.dataset.blocked = "1"; });
+}
+// se il browser ha bloccato l'autoplay, il primo tocco/click sblocca tutti i video
+document.addEventListener("click", () => {
+  Object.values(videoBoxes).forEach((vb) => { if (vb.box.dataset.blocked) { delete vb.box.dataset.blocked; playRemote(vb); } });
+});
+
 function removeRemoteVideo(id) {
   const el = document.getElementById("video-" + id);
   if (el) el.remove();
@@ -536,15 +545,18 @@ function makePeer(id, initiator) {
   });
   
   pc.onicecandidate = (e) => e.candidate && send({ t: "signal", to: id, data: { ice: e.candidate } });
+  const remoteStream = new MediaStream();
   pc.ontrack = (e) => {
-    console.log("Video ricevuto da", id);
+    console.log("Traccia ricevuta da", id, e.track.kind);
+    remoteStream.addTrack(e.track);
     if (!videoBoxes[id]) {
       addRemoteVideo(id, users.find(u => u.id === id)?.name || "Sconosciuto");
     }
     const vb = videoBoxes[id];
     if (vb) {
-      vb.video.srcObject = e.streams[0];
-      vb.video.play().catch(() => {});
+      vb.video.srcObject = remoteStream;
+      playRemote(vb);
+      e.track.onunmute = () => playRemote(vb);
     }
   };
   pc.onconnectionstatechange = () => {
