@@ -60,12 +60,28 @@ button{cursor:pointer}
 .videoBox.muto video{opacity:.5}
 
 #vmsg{margin:0;font-size:13px;color:var(--sbiadito);min-height:2.6em}
-.riga{display:flex;gap:8px;width:100%}
-.riga .bottone{flex:1;padding:10px;font-size:14px}
+.riga{display:flex;gap:8px;width:100%;flex-wrap:wrap}
+.riga .bottone{flex:1;padding:10px;font-size:14px;min-width:70px}
 .persona{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px}
 .avatar{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;color:#001018;flex:none;box-shadow:0 0 12px rgba(0,229,255,.25)}
 .persona .nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .persona .chip{font-size:10px;color:#001018;background:var(--ciano);border-radius:6px;padding:2px 6px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+
+/* impostazioni */
+#impostazioni{display:none;position:fixed;inset:0;background:rgba(5,7,13,.95);backdrop-filter:blur(20px);z-index:100;padding:20px;overflow-y:auto;padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+#impostazioni.on{display:flex;flex-direction:column}
+#impostazioni .box{max-width:500px;margin:0 auto;width:100%}
+#impostazioni h2{margin:0 0 16px;color:var(--ciano)}
+.settingGroup{margin-bottom:16px;padding:12px;border:1px solid var(--bordo);border-radius:12px;background:rgba(0,0,0,.3)}
+.settingGroup label{display:block;margin-bottom:6px;font-size:13px;color:var(--sbiadito)}
+.settingGroup select{width:100%;padding:10px;background:rgba(0,0,0,.4);border:1px solid var(--bordo);border-radius:8px;color:var(--testo);margin-bottom:8px;font-size:13px}
+.settingGroup select:focus{border-color:var(--ciano);outline:none}
+.diagnostica{padding:10px;background:rgba(0,229,255,.08);border-left:3px solid var(--ciano);border-radius:6px;margin-bottom:8px;font-size:13px;font-family:monospace;word-break:break-all}
+.diagnostica.ok{background:rgba(0,255,127,.08);border-color:#00ff7f}
+.diagnostica.errore{background:rgba(255,61,127,.08);border-color:var(--rosso)}
+.testBtn{background:rgba(0,229,255,.2);border:1px solid var(--ciano);color:var(--ciano);padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:8px;cursor:pointer;width:100%}
+.testBtn:active{background:rgba(0,229,255,.35)}
+.chiudiSetting{position:absolute;top:14px;right:14px;background:var(--ciano);color:#001018;border:0;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;font-weight:700}
 
 #main{flex:1;display:flex;flex-direction:column;min-width:0}
 #top{display:flex;align-items:center;gap:14px;padding:16px 22px;padding-top:calc(16px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--bordo);background:rgba(5,7,13,.6);backdrop-filter:blur(12px)}
@@ -136,8 +152,9 @@ button{cursor:pointer}
         <p id="vmsg">Nessuno in voce.</p>
         <div class="riga">
           <button class="bottone" id="vjoin">Connetti</button>
-          <button class="bottone secondario" id="vcam" hidden>📹 Camera</button>
-          <button class="bottone secondario" id="vmute" hidden>🎙️ Muta</button>
+          <button class="bottone secondario" id="vcam" hidden>📹</button>
+          <button class="bottone secondario" id="vmute" hidden>🎙️</button>
+          <button class="bottone secondario" id="settingBtn" hidden>⚙️</button>
         </div>
       </div>
     </section>
@@ -163,6 +180,50 @@ button{cursor:pointer}
       <button id="send">Invia</button>
     </div>
   </main>
+</div>
+
+<div id="impostazioni">
+  <button class="chiudiSetting" id="chiudiSetting">✕</button>
+  <div class="box">
+    <h2>Impostazioni Audio/Video</h2>
+    
+    <div class="settingGroup">
+      <label>📊 Diagnostica Microfono</label>
+      <div class="diagnostica" id="diagMic">Controllo in corso...</div>
+    </div>
+
+    <div class="settingGroup">
+      <label>📊 Diagnostica Camera</label>
+      <div class="diagnostica" id="diagCam">Controllo in corso...</div>
+    </div>
+
+    <div class="settingGroup">
+      <label>🎙️ Microfono</label>
+      <select id="audioInput">
+        <option>Caricamento dispositivi...</option>
+      </select>
+      <button class="testBtn" id="testMic">🔊 Test Microfono</button>
+    </div>
+
+    <div class="settingGroup">
+      <label>🔊 Speaker</label>
+      <select id="audioOutput">
+        <option>Caricamento dispositivi...</option>
+      </select>
+      <button class="testBtn" id="testSpeaker">▶️ Test Speaker</button>
+    </div>
+
+    <div class="settingGroup">
+      <label>📹 Camera</label>
+      <select id="videoInput">
+        <option>Caricamento dispositivi...</option>
+      </select>
+      <button class="testBtn" id="testCam">📷 Test Camera</button>
+      <video id="testVideo" style="width:100%;border-radius:8px;margin-top:8px;background:#000;display:none"></video>
+    </div>
+
+    <button class="bottone" id="salvaImpostazioni" style="width:100%;margin-top:16px">Salva e Torna</button>
+  </div>
 </div>
 
 <script>
@@ -314,25 +375,35 @@ const audioCtx = () => { if (!window._ac) window._ac = new (window.AudioContext 
 async function joinVoice() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ 
-      audio: { echoCancellation: true, noiseSuppression: true },
-      video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+      audio: { echoCancellation: true, noiseSuppression: true }
     });
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      videoStream.getTracks().forEach((t) => localStream.addTrack(t));
+    } catch (e) {
+      console.log("Camera non disponibile, solo audio");
+      $("#vmsg").textContent = "Camera non disponibile. Usi solo audio.";
+    }
   } catch (e) {
-    $("#vmsg").textContent = "Microfono/camera non disponibili. Controlla i permessi (serve HTTPS).";
+    $("#vmsg").textContent = "Microfono non disponibile. Controlla i permessi (serve HTTPS).";
+    console.error("Audio error:", e);
     return;
   }
+  
   try { audioCtx().resume(); } catch (e) {}
   inVoice = true; mutedMic = false; mutedCam = false;
   
-  // Mostra video locale
   addLocalVideo();
   
   $("#vjoin").textContent = "Disconnetti";
   $("#vjoin").classList.add("rosso");
-  $("#vcam").hidden = false;
-  $("#vcam").textContent = "📹 Camera";
+  $("#vcam").hidden = localStream.getVideoTracks().length === 0;
+  $("#vcam").textContent = "📹";
   $("#vmute").hidden = false;
-  $("#vmute").textContent = "🎙️ Muta";
+  $("#vmute").textContent = "🎙️";
+  $("#settingBtn").hidden = false;
   send({ t: "voice-join" });
 }
 
@@ -359,13 +430,13 @@ function leaveVoice(notify = true) {
   localStream = null;
   inVoice = false;
   
-  // Rimuovi video
   document.getElementById("videoGrid").innerHTML = "";
   
   $("#vjoin").textContent = "Connetti";
   $("#vjoin").classList.remove("rosso");
   $("#vcam").hidden = true;
   $("#vmute").hidden = true;
+  $("#settingBtn").hidden = true;
   
   if (notify) {
     try { send({ t: "voice-leave" }); } catch (e) { }
@@ -374,20 +445,25 @@ function leaveVoice(notify = true) {
 
 function addLocalVideo() {
   const grid = document.getElementById("videoGrid");
-  const box = document.createElement("div");
-  box.className = "videoBox locale";
-  box.id = "video-local";
-  const video = document.createElement("video");
-  video.srcObject = localStream;
-  video.autoplay = true;
-  video.playsInline = true;
-  video.muted = true;
-  const label = document.createElement("div");
-  label.className = "videoNome";
-  label.textContent = me.name + " (tu)";
-  box.appendChild(video);
-  box.appendChild(label);
-  grid.appendChild(box);
+  grid.innerHTML = "";
+  const hasVideo = localStream && localStream.getVideoTracks().length > 0;
+  
+  if (hasVideo) {
+    const box = document.createElement("div");
+    box.className = "videoBox locale";
+    box.id = "video-local";
+    const video = document.createElement("video");
+    video.srcObject = localStream;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true;
+    const label = document.createElement("div");
+    label.className = "videoNome";
+    label.textContent = me.name + " (tu)";
+    box.appendChild(video);
+    box.appendChild(label);
+    grid.appendChild(box);
+  }
 }
 
 function addRemoteVideo(id, name) {
@@ -425,6 +501,10 @@ function makePeer(id, initiator) {
   
   pc.onicecandidate = (e) => e.candidate && send({ t: "signal", to: id, data: { ice: e.candidate } });
   pc.ontrack = (e) => {
+    console.log("Video ricevuto da", id);
+    if (!videoBoxes[id]) {
+      addRemoteVideo(id, users.find(u => u.id === id)?.name || "Sconosciuto");
+    }
     const vb = videoBoxes[id];
     if (vb) {
       vb.video.srcObject = e.streams[0];
@@ -439,7 +519,7 @@ function makePeer(id, initiator) {
     pc.createOffer()
       .then((o) => pc.setLocalDescription(o))
       .then(() => send({ t: "signal", to: id, data: { sdp: pc.localDescription } }))
-      .catch(() => {});
+      .catch((e) => console.error("Offer error:", e));
   }
   return pc;
 }
@@ -471,20 +551,212 @@ function closePeer(id) {
 }
 
 /* ---------- controlli microfono e camera ---------- */
-$("#vcam").addEventListener("click", () => {
+$("#vcam").addEventListener("click", async () => {
   if (!localStream) return;
-  mutedCam = !mutedCam;
-  localStream.getVideoTracks().forEach((t) => (t.enabled = !mutedCam));
-  $("#vcam").textContent = mutedCam ? "🚫 Camera" : "📹 Camera";
-  const localBox = document.getElementById("video-local");
-  if (localBox) localBox.classList.toggle("muto", mutedCam);
+  
+  if (mutedCam && localStream.getVideoTracks().length === 0) {
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      videoStream.getTracks().forEach((t) => {
+        localStream.addTrack(t);
+        Object.values(pcs).forEach((pc) => {
+          pc.addTrack(t, localStream);
+        });
+      });
+      mutedCam = false;
+      addLocalVideo();
+      $("#vcam").textContent = "📹";
+    } catch (e) {
+      console.error("Camera error:", e);
+      $("#vmsg").textContent = "Impossibile accendere la camera.";
+      return;
+    }
+  } else {
+    mutedCam = !mutedCam;
+    localStream.getVideoTracks().forEach((t) => (t.enabled = !mutedCam));
+    $("#vcam").textContent = mutedCam ? "🚫" : "📹";
+    const localBox = document.getElementById("video-local");
+    if (localBox) localBox.classList.toggle("muto", mutedCam);
+  }
 });
 
 $("#vmute").addEventListener("click", () => {
   if (!localStream) return;
   mutedMic = !mutedMic;
   localStream.getAudioTracks().forEach((t) => (t.enabled = !mutedMic));
-  $("#vmute").textContent = mutedMic ? "🔇 Audio" : "🎙️ Muta";
+  $("#vmute").textContent = mutedMic ? "🔇" : "🎙️";
+});
+
+/* ---------- impostazioni dispositivi ---------- */
+let devices = { audio: [], video: [], output: [] };
+
+async function loadDevices() {
+  try {
+    const all = await navigator.mediaDevices.enumerateDevices();
+    devices = { audio: [], video: [], output: [] };
+    all.forEach((d) => {
+      if (d.kind === "audioinput") devices.audio.push(d);
+      else if (d.kind === "videoinput") devices.video.push(d);
+      else if (d.kind === "audiooutput") devices.output.push(d);
+    });
+    updateDeviceSelects();
+    diagnosticCheck();
+  } catch (e) {
+    console.error("Errore nel caricamento dispositivi:", e);
+  }
+}
+
+function updateDeviceSelects() {
+  const audioSelect = document.getElementById("audioInput");
+  audioSelect.innerHTML = "";
+  if (devices.audio.length > 0) {
+    devices.audio.forEach((d) => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.textContent = d.label || "Microfono " + d.deviceId.slice(0, 5);
+      audioSelect.appendChild(opt);
+    });
+  } else {
+    audioSelect.innerHTML = "<option>Nessun microfono trovato</option>";
+  }
+
+  const outputSelect = document.getElementById("audioOutput");
+  outputSelect.innerHTML = "";
+  if (devices.output.length > 0) {
+    devices.output.forEach((d) => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.textContent = d.label || "Speaker " + d.deviceId.slice(0, 5);
+      outputSelect.appendChild(opt);
+    });
+  } else {
+    outputSelect.innerHTML = "<option>Nessuno speaker trovato</option>";
+  }
+
+  const videoSelect = document.getElementById("videoInput");
+  videoSelect.innerHTML = "";
+  if (devices.video.length > 0) {
+    devices.video.forEach((d) => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.textContent = d.label || "Camera " + d.deviceId.slice(0, 5);
+      videoSelect.appendChild(opt);
+    });
+  } else {
+    videoSelect.innerHTML = "<option>Nessuna camera trovata</option>";
+  }
+}
+
+async function diagnosticCheck() {
+  const diagMic = document.getElementById("diagMic");
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const tracks = stream.getAudioTracks();
+    if (tracks.length > 0) {
+      diagMic.textContent = "✓ Microfono OK: " + (tracks[0].label || "Generico");
+      diagMic.className = "diagnostica ok";
+      tracks.forEach(t => t.stop());
+    } else {
+      diagMic.textContent = "✗ Nessuna traccia audio trovata";
+      diagMic.className = "diagnostica errore";
+    }
+  } catch (e) {
+    diagMic.textContent = "✗ Errore: " + e.message;
+    diagMic.className = "diagnostica errore";
+  }
+
+  const diagCam = document.getElementById("diagCam");
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const tracks = stream.getVideoTracks();
+    if (tracks.length > 0) {
+      diagCam.textContent = "✓ Camera OK: " + (tracks[0].label || "Generica");
+      diagCam.className = "diagnostica ok";
+      tracks.forEach(t => t.stop());
+    } else {
+      diagCam.textContent = "✗ Nessuna traccia video trovata";
+      diagCam.className = "diagnostica errore";
+    }
+  } catch (e) {
+    diagCam.textContent = "✗ Errore: " + e.message;
+    diagCam.className = "diagnostica errore";
+  }
+}
+
+$("#settingBtn").addEventListener("click", () => {
+  document.getElementById("impostazioni").classList.add("on");
+  loadDevices();
+});
+
+document.getElementById("chiudiSetting").addEventListener("click", () => {
+  document.getElementById("impostazioni").classList.remove("on");
+});
+
+document.getElementById("salvaImpostazioni").addEventListener("click", () => {
+  const audioId = document.getElementById("audioInput").value;
+  const outputId = document.getElementById("audioOutput").value;
+  const videoId = document.getElementById("videoInput").value;
+  localStorage.setItem("nexus-audio", audioId);
+  localStorage.setItem("nexus-output", outputId);
+  localStorage.setItem("nexus-video", videoId);
+  document.getElementById("impostazioni").classList.remove("on");
+});
+
+document.getElementById("testMic").addEventListener("click", async () => {
+  try {
+    const audioId = document.getElementById("audioInput").value;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { deviceId: audioId ? { exact: audioId } : undefined }
+    });
+    const osc = audioCtx().createOscillator();
+    const gain = audioCtx().createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx().destination);
+    gain.gain.setValueAtTime(0.2, audioCtx().currentTime);
+    osc.start();
+    setTimeout(() => osc.stop(), 500);
+    stream.getTracks().forEach(t => t.stop());
+    alert("Test completato: dovresti aver sentito un beep dal tuo speaker");
+  } catch (e) {
+    alert("Errore nel test microfono: " + e.message);
+  }
+});
+
+document.getElementById("testSpeaker").addEventListener("click", async () => {
+  try {
+    const osc = audioCtx().createOscillator();
+    const gain = audioCtx().createGain();
+    osc.frequency.value = 1000;
+    osc.connect(gain);
+    gain.connect(audioCtx().destination);
+    gain.gain.setValueAtTime(0.2, audioCtx().currentTime);
+    osc.start();
+    setTimeout(() => osc.stop(), 500);
+    alert("Dovresti sentire un beep di 500ms");
+  } catch (e) {
+    alert("Errore nel test speaker: " + e.message);
+  }
+});
+
+document.getElementById("testCam").addEventListener("click", async () => {
+  try {
+    const videoId = document.getElementById("videoInput").value;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: videoId ? { exact: videoId } : undefined }
+    });
+    const video = document.getElementById("testVideo");
+    video.srcObject = stream;
+    video.style.display = "block";
+    video.play();
+    setTimeout(() => {
+      stream.getTracks().forEach(t => t.stop());
+      video.style.display = "none";
+    }, 3000);
+  } catch (e) {
+    alert("Errore nel test camera: " + e.message);
+  }
 });
 
 /* ---------- eventi ---------- */
